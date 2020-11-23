@@ -24,8 +24,11 @@ to avoid rejecting the remaining transactions in the buffers, which could have b
 from numpy import random
 import simpy
 import sys
-import powerlaw
+# import powerlaw
 import pandas as pd
+import sortedcontainers as sc
+
+# sc.SortedKeyList.__repr__ = lambda skl: list(skl)
 
 
 class Transaction:
@@ -56,6 +59,41 @@ class Transaction:
 
     def __repr__(self):
         return "%d->%d t=%.2f D=%d a=%d" % (self.from_node, self.to_node, self.time, self.max_allowed_delay, self.amount)
+
+
+# class BufferedTransaction:
+#     def __init__(self, t, processing_order):
+#         self.t = t
+#         self.processing_order = processing_order
+#
+#     def _cmp_key(self):
+#         return self.t, self.processing_order
+#
+#     def __eq__(self, other):
+#         # noinspection PyProtectedMember
+#         return self._cmp_key() == other._cmp_key()
+#
+#     # def __lt__(self, other):
+#     #     return self._cmp_key() < other._cmp_key()
+#
+#     def __lt__(self, other):
+#         if self.processing_order == "oldest_transaction_first":
+#             return self.t.time >= other.t.time
+#         elif self.processing_order == "youngest_transaction_first":
+#             return self.t.time <= other.t.time
+#         elif self.processing_order == "closest_deadline_first":
+#             return self.t.time + self.t.max_allowed_delay <= other.t.time + other.t.max_allowed_delay
+#         elif self.processing_order == "largest_amount_first":
+#             return self.t.amount >= other.t.amount
+#         elif self.processing_order == "smallest_amount_first":
+#             return self.t.amount <= other.t.amount
+#         # elif optimal....
+#         else:
+#             print("Input error: {} is not a valid 'processing_order' value.".format(self.processing_order))
+#             sys.exit(1)
+#
+#     def __repr__(self):
+#         print(self.t)
 
 
 class Channel:
@@ -202,14 +240,19 @@ class Channel:
                 else:   # Transaction expired and will be handled in the next processing of the buffer.
                     return False
         elif (IP and BE and FT and not FE) or (not IP and BE and FT):  # add to buffer
-            self.buffers[t.from_node].transaction_list.append(t)
+            # self.buffers[t.from_node].transaction_list.append(t)
+
+            # processing_order = self.buffers[t.from_node].processing_order
+            # self.buffers[t.from_node].transaction_list.append(BufferedTransaction(t, processing_order))
+            self.buffers[t.from_node].transaction_list.add(t)
+
             # print(self.buffers[t.from_node].transaction_list)
             t.buffered = True
             if self.verbose:
                 print("Transaction {} added to buffer of node {}.".format(t, t.from_node))
                 print("Unchanged balances are", self.balances)
-                if self.buffers[0] is not None: print("Buffer 0:", self.buffers[0].transaction_list)
-                if self.buffers[1] is not None: print("Buffer 1:", self.buffers[1].transaction_list)
+                if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
+                if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
             # t.status = "PENDING"  # t.status is "PENDING" already
             return False
         elif (IP and not BE and FT and not FE) or (not IP and not BE and FT):  # reject
@@ -235,16 +278,33 @@ class Buffer:
         self.node = node
         self.channel = channel
         # self.max_allowed_delay = max_allowed_delay
-        self.transaction_list = []
         self.processing_order = processing_order
         self.verbose = verbose
         self.total_simulation_time_estimation = total_simulation_time_estimation
         self.total_successes = 0
 
+        if self.processing_order == "oldest_transaction_first":
+            key = lambda t: t.time
+        elif self.processing_order == "youngest_transaction_first":
+            key = lambda t: - t.time
+        elif self.processing_order == "closest_deadline_first":
+            key = lambda t: t.time + t.max_allowed_delay
+        elif self.processing_order == "largest_amount_first":
+            key = lambda t: t.amount
+        elif self.processing_order == "smallest_amount_first":
+            key = lambda t: - t.amount
+        # elif optimal....
+        else:
+            print("Input error: {} is not a valid 'processing_order' value.".format(self.processing_order))
+            sys.exit(1)
+
+        self.transaction_list = sc.SortedKeyList(key=key)
+        # self.transaction_list.__repr__ = lambda skl: list(skl)
+
     def run(self):
         while self.env.now <= self.total_simulation_time_estimation:
             # s = self.process_buffer()
-            s = self.process_buffer_greedy(self.processing_order)
+            s = self.process_buffer_greedy()
             self.total_successes = self.total_successes + s
             yield self.env.timeout(1)
 
@@ -281,55 +341,42 @@ class Buffer:
     #
     #     return total_successes_this_time
 
-    def process_buffer_greedy(self, processing_order):
-
-        if processing_order == "oldest_transaction_first":      # This is FIFO
-            sorted_buffer = sorted(self.transaction_list, key=lambda tr: tr.time)
-        elif processing_order == "youngest_transaction_first":  # This is LIFO
-            sorted_buffer = sorted(self.transaction_list, key=lambda tr: tr.time, reverse=True)
-        elif processing_order == "closest_deadline_first":      # This is pointless if max_allowed_delay is the same for all transactions
-            sorted_buffer = sorted(self.transaction_list, key=lambda tr: tr.time + tr.max_allowed_delay - self.env.now)
-        elif processing_order == "largest_amount_first":
-            sorted_buffer = sorted(self.transaction_list, key=lambda tr: tr.amount, reverse=True)
-        elif processing_order == "smallest_amount_first":
-            sorted_buffer = sorted(self.transaction_list, key=lambda tr: tr.amount)
-        else:
-            print("Input error: {} is not a valid 'processing_order' value.".format(processing_order))
-            sys.exit(1)
-
-        # print("\nBuffer sorted:", sorted_buffer, "\n")
-
+    def process_buffer_greedy(self):
         # Processes all transactions that are possible now and returns total successful transactions.
         total_successes_this_time = 0
 
-        while sorted_buffer:  # while list not empty
-            t = sorted_buffer.pop(0)
+        while self.transaction_list:  # while list not empty
+            t = self.transaction_list.pop(index=0)
             if t.time + t.max_allowed_delay < self.env.now:  # if t is too old, reject it and remove it from buffer
                 t.status = "EXPIRED"
-                self.transaction_list.remove(t)
                 if self.verbose:
                     print("FAILURE: Transaction {} expired and was removed from buffer at time {:.2f}.".format(t,
                                                                                                                self.env.now))
-                    if self.channel.buffers[0] is not None: print("Buffer 0:", self.channel.buffers[0].transaction_list)
-                    if self.channel.buffers[1] is not None: print("Buffer 1:", self.channel.buffers[1].transaction_list)
+                    if self.channel.buffers[0] is not None: print("Buffer 0:", list(self.channel.buffers[0].transaction_list))
+                    if self.channel.buffers[1] is not None: print("Buffer 1:", list(self.channel.buffers[1].transaction_list))
             else:  # if t is not too old and can be processed, process it
                 # if self.channel.process_transaction(t):
                 self.env.process(t.run())
                 if t.status == "SUCCEEDED":
-                    self.transaction_list.remove(t)
                     if self.verbose:
                         print("SUCCESS: Transaction {} was processed and removed from buffer at time {:.2f}.".format(t,
                                                                                                                      self.env.now))
                         print("New balances are", self.channel.balances)
                         if self.channel.buffers[0] is not None: print("Buffer 0:",
-                                                                      self.channel.buffers[0].transaction_list)
+                                                                      list(self.channel.buffers[0].transaction_list))
                         if self.channel.buffers[1] is not None: print("Buffer 1:",
-                                                                      self.channel.buffers[1].transaction_list)
+                                                                      list(self.channel.buffers[1].transaction_list))
                     total_successes_this_time += 1
                 else:
                     pass
 
         return total_successes_this_time
+
+    # def process_buffer_optimal(self):
+
+
+    # def __repr__(self):
+    #     return list(self.transaction_list)
 
 
 def transaction_generator(env, channel, from_node, total_transactions, max_transaction_amount, exp_mean,
@@ -408,8 +455,8 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances, total_transactions_0,
         print("Success rate:", success_rates)
         print("Total successfully processed amounts:", channel.successful_amounts)
 
-        if channel.buffers[0] is not None: print("Buffer 0:", channel.buffers[0].transaction_list)
-        if channel.buffers[1] is not None: print("Buffer 1:", channel.buffers[1].transaction_list)
+        if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
+        if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
 
     for t in all_transactions_list:
         del t.env
