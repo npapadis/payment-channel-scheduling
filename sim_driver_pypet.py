@@ -59,8 +59,8 @@ def main():
                          comment='Order of processing transactions in the buffer')
     traj.f_add_parameter('max_buffering_time', 0, comment='Maximum time before a transaction expires')
 
-    traj.f_add_parameter('verbose', False, comment='Verbose output')
-    traj.f_add_parameter('num_of_experiments', 2, comment='Repetitions of every experiment')
+    traj.f_add_parameter('verbose', True, comment='Verbose output')
+    traj.f_add_parameter('num_of_experiments', 1, comment='Repetitions of every experiment')
     traj.f_add_parameter('seed', 0, comment='Randomness seed')
 
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434,
@@ -68,8 +68,8 @@ def main():
 
     traj.f_explore(pypet.cartesian_product({
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            'who_has_buffer': ["none", "only_node_0", "both_shared"],
-                                            'immediate_processing': [True, False],
+                                            'who_has_buffer': ["both_shared"],
+                                            'immediate_processing': [True],
                                             'processing_order': ["oldest_transaction_first", "closest_deadline_first"],
                                             # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
                                             'max_buffering_time': range(0,100,50),
