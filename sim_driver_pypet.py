@@ -43,11 +43,11 @@ def main():
     traj.f_add_parameter('initial_balance_0', 150, comment='Initial balance of node 0')
     traj.f_add_parameter('initial_balance_1', 150, comment='Initial balance of node 1')
 
-    traj.f_add_parameter('total_transactions_0', 200, comment='Total transactions arriving at node 0')
+    traj.f_add_parameter('total_transactions_0', 20, comment='Total transactions arriving at node 0')
     traj.f_add_parameter('max_transaction_amount_0', traj.initial_balance_0 + traj.initial_balance_1,
                          comment='Maximum possible amount for incoming transactions at node 0')
     traj.f_add_parameter('exp_mean_0', 1 / 3, comment='Rate of exponentially distributed arrivals at node 0')
-    traj.f_add_parameter('total_transactions_1', 200, comment='Total transactions arriving at node 1')
+    traj.f_add_parameter('total_transactions_1', 20, comment='Total transactions arriving at node 1')
     traj.f_add_parameter('max_transaction_amount_1', traj.initial_balance_0 + traj.initial_balance_1,
                          comment='Maximum possible amount for incoming transactions at node 1')
     traj.f_add_parameter('exp_mean_1', 1 / 3, comment='Rate of exponentially distributed arrivals at node 1')
@@ -68,11 +68,11 @@ def main():
 
     traj.f_explore(pypet.cartesian_product({
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            'who_has_buffer': ["both_shared"],
+                                            'who_has_buffer': ["both_separate"],
                                             'immediate_processing': [True],
-                                            'processing_order': ["oldest_transaction_first", "closest_deadline_first"],
-                                            # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
-                                            'max_buffering_time': range(0,100,50),
+                                            'processing_order': ["optimal_policy"],#["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
+                                            # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "optimal_policy"],
+                                            'max_buffering_time': [5],#range(0,100,50),
                                             # 'max_buffering_time': list(range(0, 50, 5)) + list(range(50, 600+1, 50)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
 
