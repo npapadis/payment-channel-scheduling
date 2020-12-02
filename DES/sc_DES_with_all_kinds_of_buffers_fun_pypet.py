@@ -124,12 +124,12 @@ class Channel:
         elif who_has_buffer == "only_node_1":
             self.buffers = [None, Buffer(env, node1, self, processing_order, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
-        elif who_has_buffer == "both_separate":
+        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and processing_order == "optimal_policy"):
             self.buffers = [Buffer(env, node0, self, processing_order, verbose, total_simulation_time_estimation),
                             Buffer(env, node1, self, processing_order, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
-        elif who_has_buffer == "both_shared":
+        elif (who_has_buffer == "both_shared") and (processing_order != "optimal_policy"):
             shared_buffer = Buffer(env, node0, self, processing_order, verbose, total_simulation_time_estimation)
             self.buffers = [shared_buffer, shared_buffer]
             self.env.process(self.buffers[0].run())
@@ -561,6 +561,7 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
         del t.env
         del t.channel
         del t.request
+        del t.preemptied
     # all_transactions_list_node_0 = [vars(t) for t in all_transactions_list_node_0]
     all_transactions_list = pd.DataFrame([vars(t) for t in all_transactions_list])
     # for t in all_transactions_list_node_0:
