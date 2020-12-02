@@ -268,7 +268,7 @@ class Channel:
             print("Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(t.status))
             sys.exit(1)
 
-        if self.buffers[t.from_node].processing_order == "optimal_policy":      # optimal policy
+        if BE and self.buffers[t.from_node].processing_order == "optimal_policy":      # optimal policy
             if not BE and FE:   # process
                 self.execute_transaction(t)
             elif BE:
@@ -463,32 +463,48 @@ class Buffer:
     #     return list(self.transaction_list)
 
 
-def transaction_generator(env, channel, from_node, total_transactions, max_transaction_amount, exp_mean,
-                          max_buffering_time, all_transactions_list, verbose):
+def transaction_generator(env, channel, from_node, total_transactions, exp_mean, amount_distribution, amount_distribution_parameters,
+                                      deadline_distribution, max_buffering_time, all_transactions_list, verbose):
     time_to_next_arrival = random.exponential(1.0 / exp_mean)
     yield env.timeout(time_to_next_arrival)
 
     for _ in range(total_transactions):
         to_node = 1 if (from_node == 0) else 0
-        # Amount ~ Uniform
-        # amount = random.randint(1, max_transaction_amount)
 
-        # Amount ~ Gaussian
-        amount = round(max(1, min(max_transaction_amount, random.normal(max_transaction_amount / 2, max_transaction_amount / 6))))
-
-        # Amount ~ Pareto
-        # lower = 1  # the lower end of the support
-        # shape = 1.16  # the distribution shape parameter, also known as `a` or `alpha`
-        # size = 1  # the size of your sample (number of random values)
-        # amount = random.pareto(shape, size) + lower
-
-        # Amount ~ Power-law
-        # powerlaw.Power_Law(xmin=1, xmax=2, discrete=True, parameters=[1.16]).generate_random(n=10)
+        if amount_distribution == "constant":
+            amount = amount_distribution_parameters[0]
+        elif amount_distribution == "uniform":
+            max_transaction_amount = amount_distribution_parameters[0]
+            amount = random.randint(1, max_transaction_amount)
+        elif amount_distribution == "gaussian":
+            max_transaction_amount = amount_distribution_parameters[0]
+            gaussian_mean = amount_distribution_parameters[1]
+            gaussian_variance = amount_distribution_parameters[2]
+            amount = round(max(1, min(max_transaction_amount, random.normal(gaussian_mean, gaussian_variance))))
+        elif amount_distribution == "pareto":
+            lower = amount_distribution_parameters[0]  # the lower end of the support
+            shape = amount_distribution_parameters[1]  # the distribution shape parameter, also known as `a` or `alpha`
+            size = amount_distribution_parameters[2]  # the size of your sample (number of random values)
+            amount = random.pareto(shape, size) + lower
+        # elif amount_distribution == "powerlaw":
+            # powerlaw.Power_Law(xmin=1, xmax=2, discrete=True, parameters=[1.16]).generate_random(n=10)
+        else:
+            print("Input error: {} is not a supported amount distribution or the parameters {} given are invalid.".format(amount_distribution, amount_distribution_parameters))
+            sys.exit(1)
 
         # Distribution for max_buffering_time
-        # initial_deadline = random.randint(0, max_buffering_time) if max_buffering_time > 0 else 0
-        # t = Transaction(env, channel, env.now, from_node, to_node, amount, initial_deadline, verbose)
-        t = Transaction(env, channel, env.now, from_node, to_node, amount, max_buffering_time, verbose)
+        if deadline_distribution == "constant":
+            # max_buffering_time = deadline_distribution_parameters[0]
+            t = Transaction(env, channel, env.now, from_node, to_node, amount, max_buffering_time, verbose)
+        elif deadline_distribution == "uniform":
+            # max_buffering_time = deadline_distribution_parameters[0]
+            initial_deadline = random.randint(0, max_buffering_time) if max_buffering_time > 0 else 0
+            t = Transaction(env, channel, env.now, from_node, to_node, amount, initial_deadline, verbose)
+        else:
+            # print("Input error: {} is not a supported deadline distribution or the parameters {} given are invalid.".format(deadline_distribution, deadline_distribution_parameters))
+            print("Input error: {} is not a supported deadline distribution.".format(deadline_distribution))
+            sys.exit(1)
+
         all_transactions_list.append(t)
 
         env.process(t.run())
@@ -500,9 +516,11 @@ def transaction_generator(env, channel, from_node, total_transactions, max_trans
 
 
 
-def sc_DES_with_all_kinds_of_buffers_fun(initial_balances, total_transactions_0, max_transaction_amount_0, exp_mean_0,
-                                         total_transactions_1, max_transaction_amount_1, exp_mean_1, max_buffering_time,
-                                         who_has_buffer, immediate_processing, processing_order, verbose, seed):
+def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
+                                         total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_0_parameters, deadline_distribution_0, max_buffering_time_0,
+                                         total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters, deadline_distribution_1, max_buffering_time_1,
+                                         who_has_buffer, immediate_processing, processing_order,
+                                         verbose, seed):
     total_simulation_time_estimation = 2 * max(total_transactions_0 * 1 / exp_mean_0,
                                                total_transactions_1 * 1 / exp_mean_1)
     random.seed(seed)
@@ -513,10 +531,10 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances, total_transactions_0,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
-    env.process(transaction_generator(env, channel, 0, total_transactions_0, max_transaction_amount_0, exp_mean_0,
-                                      max_buffering_time, all_transactions_list, verbose))
-    env.process(transaction_generator(env, channel, 1, total_transactions_1, max_transaction_amount_1, exp_mean_1,
-                                      max_buffering_time, all_transactions_list, verbose))
+    env.process(transaction_generator(env, channel, 0, total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_0_parameters,
+                                      deadline_distribution_0, max_buffering_time_0, all_transactions_list, verbose))
+    env.process(transaction_generator(env, channel, 1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters,
+                                      deadline_distribution_1, max_buffering_time_1, all_transactions_list, verbose))
     # env.process(transaction_generator(env, 0, total_transactions_0, max_transaction_amount_0, exp_mean_0))
     # env.process(transaction_generator(env, 1, total_transactions_1, max_transaction_amount_1, exp_mean_1))
 
