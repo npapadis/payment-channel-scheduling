@@ -385,6 +385,7 @@ class Buffer:
 
     def run(self):
         if self.processing_order in ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"]:
+            # while True:
             while self.env.now <= self.total_simulation_time_estimation:
                 # s = self.process_buffer()
                 # s = self.process_buffer_greedy()
@@ -521,8 +522,7 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
                                          total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters, deadline_distribution_1, max_buffering_time_1,
                                          who_has_buffer, immediate_processing, processing_order,
                                          verbose, seed):
-    total_simulation_time_estimation = 2 * max(total_transactions_0 * 1 / exp_mean_0,
-                                               total_transactions_1 * 1 / exp_mean_1)
+    total_simulation_time_estimation = max(total_transactions_0 * 1 / exp_mean_0, total_transactions_1 * 1 / exp_mean_1)
     random.seed(seed)
 
     env = simpy.Environment()
@@ -540,19 +540,45 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
 
     env.run()
 
-    success_rates = [channel.successful_transactions[0] / total_transactions_0,
-                     channel.successful_transactions[1] / total_transactions_1,
-                     (channel.successful_transactions[0] + channel.successful_transactions[1]) / (
-                                 total_transactions_0 + total_transactions_1)]
+    # success_rates = [channel.successful_transactions[0] / total_transactions_0,
+    #                  channel.successful_transactions[1] / total_transactions_1,
+    #                  (channel.successful_transactions[0] + channel.successful_transactions[1]) / (
+    #                              total_transactions_0 + total_transactions_1)]
+
+
+    measurement_interval = [total_simulation_time_estimation*0.1, total_simulation_time_estimation*0.9]
+    # sr_new = 0
+    # for t in all_transactions_list:
+    #     if (t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]):
+    #         if t.status == "SUCCEEDED":
+    #             sr_new += 1
+
+    success_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
+    success_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
+    success_count_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
+    arrived_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
+    arrived_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
+    arrived_count_channel_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
+    throughput_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
+    throughput_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
+    throughput_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
+    arrived_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
+    arrived_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
+    arrived_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
 
     # sacrificed_0 = sum(1 for t in all_transactions_list_node_0 if (t.initially_feasible is True and t.status in ["REJECTED", "EXPIRED"]))
     # sacrificed_1 = sum(1 for t in all_transactions_list_node_1 if (t.initially_feasible is True and t.status in ["REJECTED", "EXPIRED"]))
-    sacrificed_0 = sum(1 for t in all_transactions_list if (t.initially_feasible is True and t.status in ["REJECTED", "EXPIRED"]))
-    sacrificed_1 = sum(1 for t in all_transactions_list if (t.initially_feasible is True and t.status in ["REJECTED", "EXPIRED"]))
+    sacrificed_node_0 = sum(1 for t in all_transactions_list if ((t.from_node == 0) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_node_1 = sum(1 for t in all_transactions_list if ((t.from_node == 1) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_channel_total = sum(1 for t in all_transactions_list if ((t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+
+    success_rates = [success_count_node_0/arrived_count_node_0, success_count_node_1/arrived_count_node_1, success_count_total/arrived_count_channel_total]
+    throughputs = [throughput_node_0, throughput_node_1, throughput_channel_total]
+    sacrifieds = [sacrificed_node_0, sacrificed_node_1, sacrificed_channel_total]
 
     if verbose:
-        print("Success rate:", success_rates)
-        print("Total successfully processed amounts:", channel.successful_amounts)
+        print("Success rate:", success_count_total/arrived_count_channel_total)
+        print("Total throughput:", throughput_channel_total/arrived_amount_channel_total)
 
         if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
         if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
@@ -575,12 +601,14 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
     # # all_transactions_list_node_1 = [vars(t) for t in all_transactions_list_node_1]
     # all_transactions_list_node_1 = pd.DataFrame([vars(t) for t in all_transactions_list_node_1])
 
-    return success_rates, \
-           channel.successful_amounts, \
-           [channel.balance_history_node_0_times, channel.balance_history_node_0_values], \
-           [sacrificed_0, sacrificed_1], \
-           all_transactions_list
-           #[all_transactions_list_node_0, all_transactions_list_node_1]
+    # return success_rates, \
+    #        channel.successful_amounts, \
+    #        # [channel.balance_history_node_0_times, channel.balance_history_node_0_values], \
+    #        [sacrificed_0, sacrificed_1], \
+    #        all_transactions_list
+    #        #[all_transactions_list_node_0, all_transactions_list_node_1]
+
+    return success_rates, throughputs, sacrifieds, all_transactions_list
 
 
 # if __name__ == '__main__':
