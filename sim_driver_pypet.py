@@ -5,7 +5,8 @@ import pandas as pd
 
 
 def pypet_wrapper(traj):
-    sr, sa, bh0, sac, atl = sc_DES_with_all_kinds_of_buffers_fun([traj.initial_balance_0, traj.initial_balance_1],
+    # sr, sa, bh0, sac, atl = sc_DES_with_all_kinds_of_buffers_fun([traj.initial_balance_0, traj.initial_balance_1],
+    sr, thr, sac, atl = sc_DES_with_all_kinds_of_buffers_fun([traj.initial_balance_0, traj.initial_balance_1],
 
                                                                  traj.total_transactions_0, traj.exp_mean_0,
                                                                  traj.amount_distribution_0, traj.amount_distribution_0_parameters,
@@ -21,10 +22,10 @@ def pypet_wrapper(traj):
     traj.f_add_result('success_rate_0', sr[0], comment='Success rate of node 0')
     traj.f_add_result('success_rate_1', sr[1], comment='Success rate of node 1')
     traj.f_add_result('success_rate_total', sr[2], comment='Total channel success rate')
-    traj.f_add_result('throughput_0', sa[0], comment='Throughput for node 0')
-    traj.f_add_result('throughput_1', sa[1], comment='Throughput for node 1')
-    traj.f_add_result('balance_history_node_0_times', bh0[0], comment='Times when balance history of node 0 changes')
-    traj.f_add_result('balance_history_node_0_values', bh0[1], comment='Balance history of node 0')
+    traj.f_add_result('throughput_0', thr[0], comment='Throughput for node 0')
+    traj.f_add_result('throughput_1', thr[1], comment='Throughput for node 1')
+    # traj.f_add_result('balance_history_node_0_times', bh0[0], comment='Times when balance history of node 0 changes')
+    # traj.f_add_result('balance_history_node_0_values', bh0[1], comment='Balance history of node 0')
     traj.f_add_result('sacrificed_0', int(sac[0]), comment='Number of sacrificed transactions for node 0')
     traj.f_add_result('sacrificed_1', int(sac[1]), comment='Number of sacrificed transactions for node 1')
     traj.f_add_result('all_transactions_list', atl, 'All transactions')
@@ -44,8 +45,8 @@ def main():
     traj = env.traj
 
     # SIMULATION PARAMETERS
-    traj.f_add_parameter('initial_balance_0', 150, comment='Initial balance of node 0')
-    traj.f_add_parameter('initial_balance_1', 150, comment='Initial balance of node 1')
+    traj.f_add_parameter('initial_balance_0', 0, comment='Initial balance of node 0')
+    traj.f_add_parameter('initial_balance_1', 300, comment='Initial balance of node 1')
 
     capacity = float(traj.initial_balance_0 + traj.initial_balance_1)
 
@@ -119,10 +120,13 @@ def main():
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             'who_has_buffer': ["both_shared"],     # optimal_policy requires both_separate
                                             'immediate_processing': [True],
-                                            'processing_order': ["optimal_policy"],#["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
+                                            # 'immediate_processing': [True, False],
+                                            'processing_order': ["oldest_transaction_first"],
+                                            # 'processing_order': ["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
                                             # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "optimal_policy"],
-                                            'max_buffering_time': [5],#range(0,100,50),
-                                            # 'max_buffering_time': list(range(0, 50, 5)) + list(range(50, 600+1, 50)),
+                                            'max_buffering_time': [50],
+                                            # 'max_buffering_time': range(0,300,50),
+                                            # 'max_buffering_time': list(range(0, 100, 10)) + list(range(100, 300+1, 50)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
 
     # Run wrapping function instead of simulator directly
