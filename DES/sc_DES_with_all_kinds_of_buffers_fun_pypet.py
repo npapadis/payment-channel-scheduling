@@ -48,7 +48,7 @@ class Transaction:
         self.preemptied = self.env.event()
 
         if self.verbose:
-            print("Transaction {} generated at time {:.2f}.".format(self, self.env.now))
+            print("Time {:.2f}: Transaction {} generated.".format(self.env.now, self))
 
         # Start the run process every time an instance is created.
         # env.process(self.run())
@@ -208,7 +208,7 @@ class Channel:
     #                 if self.buffers[0] is not None: print(self.buffers[0].transaction_list)
     #                 if self.buffers[1] is not None: print(self.buffers[1].transaction_list)
 
-    def execute_transaction(self, t):
+    def execute_feasible_transaction(self, t):
         # Calling this function requires checking for transaction feasibility beforehand. The function itself does not perform any checks, and this could lead to negative balances if misused.
 
         FT = t.buffered is False  # First Time
@@ -222,10 +222,10 @@ class Channel:
 
         if self.verbose:
             if FT:
-                print("Transaction {} processed at time {:.2f}.".format(t, self.env.now))
+                print("Time {:.2f}: Transaction {} processed.".format(self.env.now, t))
             else:
-                print("SUCCESS: Transaction {} was processed and removed from buffer at time {:.2f}.".format(t, self.env.now))
-            print("New balances are", self.balances)
+                print("Time {:.2f}: SUCCESS: Transaction {} was processed and removed from buffer.".format(self.env.now, t))
+            print("Time {:.2f}: New balances are {}.".format(self.env.now, self.balances))
 
         t.status = "SUCCEEDED"
 
@@ -234,10 +234,10 @@ class Channel:
 
         if self.verbose:
             if FT:
-                print("Transaction {} rejected at time {:.2f}.".format(t, self.env.now))
-                print("Unchanged balances are", self.balances)
+                print("Time {:.2f}: Transaction {} rejected.".format(self.env.now, t))
+                print("Time {:.2f}: Unchanged balances are {}.".format(self.env.now, self.balances))
             else:
-                print("FAILURE: Transaction {} expired and was removed from buffer at time {:.2f}.".format(t, self.env.now))
+                print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t))
         t.status = "REJECTED"
 
     def add_transaction_to_buffer(self, t):
@@ -250,10 +250,9 @@ class Channel:
         # print(self.buffers[t.from_node].transaction_list)
         t.buffered = True
         if self.verbose:
-            print("Transaction {} added to buffer of node {}.".format(t, t.from_node))
-            print("Unchanged balances are", self.balances)
-            if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
-            if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
+            print("Time {:.2f}: Transaction {} added to buffer of node {}.".format(self.env.now, t, t.from_node))
+            print("Time {:.2f}: Unchanged balances are {}.".format(self.env.now, self.balances))
+            self.print_buffers()
         # t.status = "PENDING"  # t.status is "PENDING" already
 
     def process_transaction(self, t):
@@ -265,12 +264,12 @@ class Channel:
         # Configurations "not BE and not FT" are not reachable. The remaining 12 of the 16 configurations are covered below.
 
         if t.status != "PENDING":
-            print("Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(t.status))
+            print("Time {:.2f}: Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(self.env.now, t.status))
             sys.exit(1)
 
         if BE and self.buffers[t.from_node].processing_order == "optimal_policy":      # optimal policy
             if not BE and FE:   # process
-                self.execute_transaction(t)
+                self.execute_feasible_transaction(t)
             elif BE:
                 self.add_transaction_to_buffer(t)
                 deadline = t.time + t.max_buffering_time - self.env.now
@@ -285,38 +284,63 @@ class Channel:
                             return True
                         else:
                             t.request = request
+                            if self.verbose:
+                                print("Time {:.2f}: Deadline of {} is expiring.".format(self.env.now, t))
                             FE_upon_expiration = t.amount <= self.balances[t.from_node]
                             if FE_upon_expiration:
                                 self.buffers[t.from_node].transaction_list.remove(t)
-                                self.execute_transaction(t)
-                                if self.verbose:
-                                    if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
-                                    if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
+                                self.execute_feasible_transaction(t)
+                                if self.verbose: self.print_buffers()
                                 return True
                             else:
                                 if t.amount <= self.balances[t.to_node] and self.buffers[t.to_node].transaction_list:
-                                    # Version 1: policy for all transaction amounts equal
-                                    opposite_tx = self.buffers[t.to_node].transaction_list.pop(index=0)
-                                    opposite_tx.preemptied.succeed()
-                                    if self.verbose:
-                                        print("PREEMPTION FOLLOWING:")
-                                    self.execute_transaction(opposite_tx)
-                                    self.buffers[t.from_node].transaction_list.remove(t)
-                                    self.execute_transaction(t)
-                                    if self.verbose:
-                                        if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
-                                        if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
-                                    return True
-                                    # # Version 2: policy for unequal amounts (WARNING: this might result in invalid state without proper checks)
-                                    # total_opposite_amount = 0
-                                    # while total_opposite_amount < t.amount and self.buffers[t.to_node].transaction_list:
-                                    #     opposite_tx = self.buffers[t.to_node].transaction_list.pop(index=0)
+                                    # # Version 1: policy for all transaction amounts equal
+                                    # opposite_tx = self.buffers[t.to_node].transaction_list.pop(index=0)
+                                    # opposite_tx.preemptied.succeed()
+                                    # if self.verbose:
+                                    #     print("Time {:.2f}: PREEMPTION FOLLOWING:".format(self.env.now))
+                                    # self.execute_feasible_transaction(opposite_tx)
+                                    # self.buffers[t.from_node].transaction_list.remove(t)
+                                    # self.execute_feasible_transaction(t)
+                                    # if self.verbose:
+                                    #     if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
+                                    #     if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
+                                    # return True
+
+                                    # Version 2: policy for unequal amounts
+                                    needed_difference = t.amount - self.balances[t.from_node]
+                                    opposite_buffer_index = 0
+                                    total_opposite_amount = 0
+                                    opposite_txs_to_use = []
+                                    while total_opposite_amount < needed_difference and total_opposite_amount < self.balances[t.to_node] and opposite_buffer_index < len(self.buffers[t.to_node].transaction_list):
+                                        next_opposite_tx = self.buffers[t.to_node].transaction_list[opposite_buffer_index]
+                                        if total_opposite_amount + next_opposite_tx.amount < self.balances[t.to_node]:
+                                            total_opposite_amount += next_opposite_tx.amount
+                                            opposite_txs_to_use.append(opposite_buffer_index)
+                                        opposite_buffer_index += 1
+
+                                    if total_opposite_amount >= needed_difference:
+                                        if self.verbose:
+                                            print("Time {:.2f}: PREEMPTION FOLLOWING:".format(self.env.now))
+                                        while len(opposite_txs_to_use) > 0:
+                                            opposite_tx_index = opposite_txs_to_use.pop(0)
+                                            opposite_txs_to_use = [x-1 for x in opposite_txs_to_use]
+                                            next_opposite_tx = self.buffers[t.to_node].transaction_list.pop(index=opposite_tx_index)
+                                            next_opposite_tx.preemptied.succeed()
+                                            self.execute_feasible_transaction(next_opposite_tx)
+                                        self.buffers[t.from_node].transaction_list.remove(t)
+                                        self.execute_feasible_transaction(t)
+                                        if self.verbose: self.print_buffers()
+                                        return True
+                                    else:
+                                        self.buffers[t.from_node].transaction_list.remove(t)
+                                        self.reject_transaction(t)
+                                        if self.verbose: self.print_buffers()
+                                        return False
                                 else:
                                     self.buffers[t.from_node].transaction_list.remove(t)
                                     self.reject_transaction(t)
-                                    if self.verbose:
-                                        if self.buffers[0] is not None: print("Buffer 0:", list(self.buffers[0].transaction_list))
-                                        if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
+                                    if self.verbose: self.print_buffers()
                                     return False
 
             else:   # reject
@@ -333,7 +357,7 @@ class Channel:
                     not IP and BE and not FT and FE):  # process
                     # Once the channel belongs to the transaction, then if the deadline has not expired, try to process it.
                     if t.time + t.max_buffering_time >= t.env.now:
-                        self.execute_transaction(t)
+                        self.execute_feasible_transaction(t)
                         return True
                     else:   # Transaction expired and will be handled in the next processing of the buffer.
                         return False
@@ -352,6 +376,9 @@ class Channel:
                 # self.channel_link.release(request)
                 sys.exit(1)
 
+    def print_buffers(self):
+        if self.buffers[0] is not None: print("Time {:.2f}: Buffer 0: {}".format(self.env.now, list(self.buffers[0].transaction_list)))
+        if self.buffers[1] is not None: print("Time {:.2f}: Buffer 1: {}".format(self.env.now, list(self.buffers[1].transaction_list)))
 
 
 class Buffer:
@@ -436,9 +463,8 @@ class Buffer:
                 t.status = "EXPIRED"
                 self.transaction_list.remove(t)
                 if self.verbose:
-                    print("FAILURE: Transaction {} expired and was removed from buffer at time {:.2f}.".format(t, self.env.now))
-                    if self.channel.buffers[0] is not None: print("Buffer 0:", list(self.channel.buffers[0].transaction_list))
-                    if self.channel.buffers[1] is not None: print("Buffer 1:", list(self.channel.buffers[1].transaction_list))
+                    print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t, self.env.now))
+                    self.channel.print_buffers()
             else:  # if t is not too old and can be processed, process it
                 # if self.channel.process_transaction(t):
                 yield self.env.process(t.run())
@@ -447,10 +473,7 @@ class Buffer:
                     if self.verbose:
                         # print("SUCCESS: Transaction {} was processed and removed from buffer at time {:.2f}.".format(t, self.env.now))
                         # print("New balances are", self.channel.balances)
-                        if self.channel.buffers[0] is not None: print("Buffer 0:",
-                                                                      list(self.channel.buffers[0].transaction_list))
-                        if self.channel.buffers[1] is not None: print("Buffer 1:",
-                                                                      list(self.channel.buffers[1].transaction_list))
+                        self.channel.print_buffers()
                     total_successes_this_time += 1
                 else:
                     pass
@@ -579,7 +602,6 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
     if verbose:
         print("Success rate:", success_count_total/arrived_count_channel_total)
         print("Total throughput:", throughput_channel_total/arrived_amount_channel_total)
-
         if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
         if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
 

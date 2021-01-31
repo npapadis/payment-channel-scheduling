@@ -121,10 +121,10 @@ def main():
                                             'who_has_buffer': ["both_shared"],     # optimal_policy requires both_separate
                                             'immediate_processing': [True],
                                             # 'immediate_processing': [True, False],
-                                            'processing_order': ["oldest_transaction_first"],
+                                            'processing_order': ["optimal_policy"],
                                             # 'processing_order': ["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
                                             # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "optimal_policy"],
-                                            'max_buffering_time': [50],
+                                            'max_buffering_time': [5],
                                             # 'max_buffering_time': range(0,300,50),
                                             # 'max_buffering_time': list(range(0, 100, 10)) + list(range(100, 300+1, 50)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
