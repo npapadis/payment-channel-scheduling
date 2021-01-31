@@ -43,7 +43,7 @@ class Transaction:
         self.verbose = verbose
         self.buffered = False
         self.status = "PENDING"     # Other statuses: "SUCCEEDED", "REJECTED", "EXPIRED"
-        self.initially_feasible = None
+        # self.initially_feasible = None
         self.request = None
         self.preemptied = self.env.event()
 
@@ -257,15 +257,20 @@ class Channel:
 
     def process_transaction(self, t):
 
+        if t.status != "PENDING":
+            print("Time {:.2f}: Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(self.env.now, t.status))
+            sys.exit(1)
+
         IP = self.immediate_processing is True          # Immediate Processing
         BE = self.buffers[t.from_node] is not None      # Buffer Exists
         FT = t.buffered is False                        # First Time
         FE = t.amount <= self.balances[t.from_node]     # FEasible
         # Configurations "not BE and not FT" are not reachable. The remaining 12 of the 16 configurations are covered below.
 
-        if t.status != "PENDING":
-            print("Time {:.2f}: Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(self.env.now, t.status))
-            sys.exit(1)
+        if FT and FE:
+            t.initially_feasible = True
+        else:
+            t.initially_feasible = False
 
         if BE and self.buffers[t.from_node].processing_order == "optimal_policy":      # optimal policy
             if not BE and FE:   # process
@@ -348,11 +353,6 @@ class Channel:
                 return False
 
         else:                                                                   # heuristic policy
-            if FT and FE:
-                t.initially_feasible = True
-            else:
-                t.initially_feasible = False
-
             if (IP and BE and FT and FE) or (IP and BE and not FT and FE) or (IP and not BE and FT and FE) or (
                     not IP and BE and not FT and FE):  # process
                     # Once the channel belongs to the transaction, then if the deadline has not expired, try to process it.
@@ -600,8 +600,9 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
     sacrifieds = [sacrificed_node_0, sacrificed_node_1, sacrificed_channel_total]
 
     if verbose:
-        print("Success rate:", success_count_total/arrived_count_channel_total)
-        print("Total throughput:", throughput_channel_total/arrived_amount_channel_total)
+        print("Total success rate: {:.2f}".format(success_count_total/arrived_count_channel_total))
+        print("Total normalized throughput: {:.2f}".format(throughput_channel_total/arrived_amount_channel_total))
+        print("Number of sacrificed transactions (node 0, node 1, total): {}".format(sacrifieds))
         if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
         if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
 

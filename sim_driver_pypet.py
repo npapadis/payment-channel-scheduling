@@ -119,9 +119,9 @@ def main():
     traj.f_explore(pypet.cartesian_product({
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             'who_has_buffer': ["both_shared"],     # optimal_policy requires both_separate
-                                            'immediate_processing': [True],
+                                            'immediate_processing': [False],
                                             # 'immediate_processing': [True, False],
-                                            'processing_order': ["optimal_policy"],
+                                            'processing_order': ["oldest_transaction_first"],
                                             # 'processing_order': ["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
                                             # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "optimal_policy"],
                                             'max_buffering_time': [5],
