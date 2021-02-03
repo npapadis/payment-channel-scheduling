@@ -109,7 +109,7 @@ class Channel:
         self.capacity = capacity
         self.balances = balances
         self.immediate_processing = immediate_processing
-        self.scheduling_policies = [scheduling_policy, scheduling_policy]
+        self.scheduling_policy = scheduling_policy
         self.verbose = verbose
         self.channel_link = simpy.Resource(env, capacity=1)
         self.successful_transactions = [0, 0]
@@ -120,14 +120,14 @@ class Channel:
         if who_has_buffer == "none":
             self.buffers = [None, None]
         elif who_has_buffer == "only_node_0":
-            self.buffers = [Buffer(env, node0, self, self.scheduling_policies[0], verbose, total_simulation_time_estimation), None]
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation), None]
             self.env.process(self.buffers[0].run())
         elif who_has_buffer == "only_node_1":
-            self.buffers = [None, Buffer(env, node1, self, self.scheduling_policies[1], verbose, total_simulation_time_estimation)]
+            self.buffers = [None, Buffer(env, node1, self, self.scheduling_policy, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and scheduling_policy == "PMDE"):
-            self.buffers = [Buffer(env, node0, self, self.scheduling_policies[0], verbose, total_simulation_time_estimation),
-                            Buffer(env, node1, self, self.scheduling_policies[1], verbose, total_simulation_time_estimation)]
+        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and self.scheduling_policy == "PMDE"):
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation),
+                            Buffer(env, node1, self, self.scheduling_policy, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
         elif (who_has_buffer == "both_shared") and (self.scheduling_policy != "PMDE"):
@@ -274,7 +274,7 @@ class Channel:
         else:
             t.initially_feasible = False
 
-        if self.scheduling_policies[t.from_node] == "PMDE":      # optimal policy
+        if self.scheduling_policy == "PMDE":      # optimal policy
             if not BE and FE:   # process
                 self.execute_feasible_transaction(t)
             elif BE:
