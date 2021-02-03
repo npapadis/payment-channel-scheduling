@@ -118,7 +118,7 @@ def main():
 
     traj.f_explore(pypet.cartesian_product({
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            'who_has_buffer': ["only_node_0"],     # PMDE requires both_separate
+                                            'who_has_buffer': ["none"],
                                             'immediate_processing': [False],
                                             # 'immediate_processing': [True, False],
                                             'scheduling_policy': ["PMDE"],

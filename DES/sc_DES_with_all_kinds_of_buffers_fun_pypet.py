@@ -109,6 +109,7 @@ class Channel:
         self.capacity = capacity
         self.balances = balances
         self.immediate_processing = immediate_processing
+        self.scheduling_policies = [scheduling_policy, scheduling_policy]
         self.verbose = verbose
         self.channel_link = simpy.Resource(env, capacity=1)
         self.successful_transactions = [0, 0]
@@ -119,18 +120,18 @@ class Channel:
         if who_has_buffer == "none":
             self.buffers = [None, None]
         elif who_has_buffer == "only_node_0":
-            self.buffers = [Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation), None]
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policies[0], verbose, total_simulation_time_estimation), None]
             self.env.process(self.buffers[0].run())
         elif who_has_buffer == "only_node_1":
-            self.buffers = [None, Buffer(env, node1, self, scheduling_policy, verbose, total_simulation_time_estimation)]
+            self.buffers = [None, Buffer(env, node1, self, self.scheduling_policies[1], verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
         elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and scheduling_policy == "PMDE"):
-            self.buffers = [Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation),
-                            Buffer(env, node1, self, scheduling_policy, verbose, total_simulation_time_estimation)]
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policies[0], verbose, total_simulation_time_estimation),
+                            Buffer(env, node1, self, self.scheduling_policies[1], verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_shared") and (scheduling_policy != "PMDE"):
-            shared_buffer = Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation)
+        elif (who_has_buffer == "both_shared") and (self.scheduling_policy != "PMDE"):
+            shared_buffer = Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation)
             self.buffers = [shared_buffer, shared_buffer]
             self.env.process(self.buffers[0].run())
         else:
@@ -222,7 +223,7 @@ class Channel:
 
         if self.verbose:
             if FT:
-                print("Time {:.2f}: Transaction {} processed.".format(self.env.now, t))
+                print("Time {:.2f}: SUCCESS: Transaction {} processed.".format(self.env.now, t))
             else:
                 print("Time {:.2f}: SUCCESS: Transaction {} was processed and removed from buffer.".format(self.env.now, t))
             print("Time {:.2f}: New balances are {}.".format(self.env.now, self.balances))
@@ -234,7 +235,7 @@ class Channel:
 
         if self.verbose:
             if FT:
-                print("Time {:.2f}: Transaction {} rejected.".format(self.env.now, t))
+                print("Time {:.2f}: FAILURE: Transaction {} rejected.".format(self.env.now, t))
                 print("Time {:.2f}: Unchanged balances are {}.".format(self.env.now, self.balances))
             else:
                 print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t))
@@ -266,13 +267,14 @@ class Channel:
         FT = t.buffered is False                        # First Time
         FE = t.amount <= self.balances[t.from_node]     # FEasible
         # Configurations "not BE and not FT" are not reachable. The remaining 12 of the 16 configurations are covered below.
+        oppositeBE = self.buffers[t.to_node] is not None    # Opposite Buffer Exists
 
         if FT and FE:
             t.initially_feasible = True
         else:
             t.initially_feasible = False
 
-        if BE and self.buffers[t.from_node].scheduling_policy == "PMDE":      # optimal policy
+        if self.scheduling_policies[t.from_node] == "PMDE":      # optimal policy
             if not BE and FE:   # process
                 self.execute_feasible_transaction(t)
             elif BE:
@@ -298,7 +300,7 @@ class Channel:
                                 if self.verbose: self.print_buffers()
                                 return True
                             else:
-                                if t.amount <= self.balances[t.to_node] and self.buffers[t.to_node].transaction_list:
+                                if t.amount <= self.balances[t.to_node] and oppositeBE and self.buffers[t.to_node].transaction_list:
                                     # # Version 1: policy for all transaction amounts equal
                                     # opposite_tx = self.buffers[t.to_node].transaction_list.pop(index=0)
                                     # opposite_tx.preemptied.succeed()
@@ -547,8 +549,9 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
                                          verbose, seed):
 
     if (scheduling_policy == "PMDE") and (immediate_processing is True):
-        print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
-        sys.exit(1)
+        # print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
+        print("Warning: A True value for immediate_processing has no effect when using the PMDE policy.")
+        # sys.exit(1)
 
     total_simulation_time_estimation = max(total_transactions_0 * 1 / exp_mean_0, total_transactions_1 * 1 / exp_mean_1)
     random.seed(seed)
