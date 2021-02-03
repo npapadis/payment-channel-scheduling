@@ -287,6 +287,7 @@ class Buffer:
         self.verbose = verbose
         self.total_simulation_time_estimation = total_simulation_time_estimation
         # self.total_successes = 0
+        self.check_interval = 1
 
         if self.scheduling_policy == "oldest_transaction_first":
             key = lambda t: t.time
@@ -314,14 +315,13 @@ class Buffer:
                 # s = self.process_buffer_greedy()
                 yield self.env.process(self.process_buffer_greedy())
                 # self.total_successes = self.total_successes + s
-                yield self.env.timeout(1)
+                yield self.env.timeout(self.check_interval)
 
     def process_buffer_greedy(self):
         # Processes all transactions that are possible now and returns total successful transactions.
         total_successes_this_time = 0
 
-        for t in self.transaction_list:  # while list not empty
-            # t = self.transaction_list.pop(index=0)
+        for t in self.transaction_list:
             if t.time + t.max_buffering_time < self.env.now:  # if t is too old, reject it and remove it from buffer
                 t.status = "EXPIRED"
                 self.transaction_list.remove(t)
@@ -329,13 +329,10 @@ class Buffer:
                     print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t, self.env.now))
                     self.channel.print_buffers()
             else:  # if t is not too old and can be processed, process it
-                # if self.channel.process_transaction(t):
                 yield self.env.process(t.run())
                 if t.status == "SUCCEEDED":
                     self.transaction_list.remove(t)
                     if self.verbose:
-                        # print("SUCCESS: Transaction {} was processed and removed from buffer at time {:.2f}.".format(t, self.env.now))
-                        # print("New balances are", self.channel.balances)
                         self.channel.print_buffers()
                     total_successes_this_time += 1
                 else:
