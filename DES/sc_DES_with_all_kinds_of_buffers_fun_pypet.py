@@ -543,8 +543,8 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
 
 
 def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
-                                         total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_0_parameters, deadline_distribution_0, max_buffering_time_0,
-                                         total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters, deadline_distribution_1, max_buffering_time_1,
+                                         total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_parameters_0, deadline_distribution_0, max_buffering_time_0,
+                                         total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_parameters_1, deadline_distribution_1, max_buffering_time_1,
                                          who_has_buffer, immediate_processing, scheduling_policy,
                                          verbose, seed):
 
@@ -562,9 +562,9 @@ def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
-    env.process(transaction_generator(env, channel, 0, total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_0_parameters,
+    env.process(transaction_generator(env, channel, 0, total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_parameters_0,
                                       deadline_distribution_0, max_buffering_time_0, all_transactions_list, verbose))
-    env.process(transaction_generator(env, channel, 1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters,
+    env.process(transaction_generator(env, channel, 1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_parameters_1,
                                       deadline_distribution_1, max_buffering_time_1, all_transactions_list, verbose))
     # env.process(transaction_generator(env, 0, total_transactions_0, max_transaction_amount_0, exp_mean_0))
     # env.process(transaction_generator(env, 1, total_transactions_1, max_transaction_amount_1, exp_mean_1))
