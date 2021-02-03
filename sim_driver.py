@@ -1,6 +1,7 @@
 import pypet
 from simulate_channel import *
-
+# import csv
+# from statsmodels.distributions.empirical_distribution import ECDF
 
 def pypet_wrapper(traj):
     node_0_parameters = [traj.initial_balance_0, traj.total_transactions_0, traj.exp_mean_0, traj.amount_distribution_0, traj.amount_distribution_parameters_0, traj.deadline_distribution_0]
@@ -46,7 +47,7 @@ def main():
                             filename='./HDF5/results_01.hdf5',
                             overwrite_file=True)
     traj = env.traj
-
+    # EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
 
     # SIMULATION PARAMETERS
 
@@ -69,27 +70,43 @@ def main():
     amount_distribution_parameters_1 = [300, 150, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance
     deadline_distribution_1 = "constant"
 
+    # if (amount_distribution_0 == "empirical_from_csv_file") or (amount_distribution_1 == "empirical_from_csv_file"):
+    #     with open(EMPIRICAL_DATA_FILEPATH, newline='') as f:
+    #         reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
+    #         empirical_data = list(reader)
+    #         empirical_data = [x[0] for x in empirical_data]     # Convert to float from list
+    #         ecdf = ECDF(empirical_data)
+    #         if amount_distribution_0 == "empirical_from_csv_file":
+    #             amount_distribution_parameters_0 = ecdf
+    #         if amount_distribution_1 == "empirical_from_csv_file":
+    #             amount_distribution_parameters_1 = ecdf
+    #
+    # print(ecdf)
+    # exit(-1)
+            
     # amount_distribution_0 = "constant"
-    # amount_distribution_0_parameters = [50]                                      # value of all transactions
+    # amount_distribution_parameters_0 = [50]                                      # value of all transactions
     # amount_distribution_0 = "uniform"
-    # amount_distribution_0_parameters = [capacity]                               # max_transaction_amount
+    # amount_distribution_parameters_0 = [capacity]                               # max_transaction_amount
     # amount_distribution_0 = "gaussian"
-    # amount_distribution_0_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    # amount_distribution_parameters_0 = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
     # amount_distribution_0 = "pareto"
-    # amount_distribution_0_parameters = [1, 1.16, 1]                             # lower, shape, size
+    # amount_distribution_parameters_0 = [1, 1.16, 1]                             # lower, shape, size
     # amount_distribution_0 = "powerlaw"
-    # amount_distribution_0_parameters = ...
+    # amount_distribution_parameters_0 = ...
+    # amount_distribution_0 = "empirical_from_csv_file"
 
     # amount_distribution_1 = "constant"
-    # amount_distribution_1_parameters = [50]                                      # value of all transactions
+    # amount_distribution_parameters_1 = [50]                                      # value of all transactions
     # amount_distribution_1 = "uniform"
-    # amount_distribution_1_parameters = [capacity]                               # max_transaction_amount
+    # amount_distribution_parameters_1 = [capacity]                               # max_transaction_amount
     # amount_distribution_1 = "gaussian"
-    # amount_distribution_1_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
+    # amount_distribution_parameters_1 = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
     # amount_distribution_1 = "pareto"
-    # amount_distribution_1_parameters = [1, 1.16, 1]                             # lower, shape, size
+    # amount_distribution_parameters_1 = [1, 1.16, 1]                             # lower, shape, size
     # amount_distribution_1 = "powerlaw"
-    # amount_distribution_1_parameters = ...
+    # amount_distribution_parameters_1 = ...
+    # amount_distribution_1 = "empirical_from_csv_file"
 
     # deadline_distribution_0 = "constant"
     # deadline_distribution_0_parameters = [5]                # buffering time of all transactions
@@ -135,13 +152,13 @@ def main():
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434, 63664, 25704, 38368, 45271, 34425]
 
     traj.f_explore(pypet.cartesian_product({
-                                            'scheduling_policy': ["PMDE"],
+                                            'scheduling_policy': ["oldest_transaction_first"],
                                             # 'scheduling_policy': ["oldest_transaction_first", "closest_deadline_first", "PMDE"],
                                             # 'scheduling_policy': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "PMDE"],
                                             'immediate_processing': [False],
                                             # 'immediate_processing': [True, False],
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            'who_has_buffer': ["none"],
+                                            'who_has_buffer': ["both_shared"],
                                             'max_buffering_time': [5],
                                             # 'max_buffering_time': range(0,300,50),
                                             # 'max_buffering_time': list(range(0, 100, 10)) + list(range(100, 300+1, 50)),
