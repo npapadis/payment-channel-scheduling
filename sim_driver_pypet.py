@@ -16,7 +16,7 @@ def pypet_wrapper(traj):
                                                                  traj.amount_distribution_1, traj.amount_distribution_1_parameters,
                                                                  traj.deadline_distribution_1, traj.max_buffering_time,
 
-                                                                 traj.who_has_buffer, traj.immediate_processing, traj.processing_order,
+                                                                 traj.who_has_buffer, traj.immediate_processing, traj.scheduling_policy,
                                                                  traj.verbose, traj.seed)
 
     traj.f_add_result('success_rate_0', sr[0], comment='Success rate of node 0')
@@ -50,23 +50,23 @@ def main():
 
     capacity = float(traj.initial_balance_0 + traj.initial_balance_1)
 
-    amount_distribution_0 = "constant"
-    amount_distribution_0_parameters = [50]                                      # value of all transactions
+    # amount_distribution_0 = "constant"
+    # amount_distribution_0_parameters = [50]                                      # value of all transactions
     # amount_distribution_0 = "uniform"
     # amount_distribution_0_parameters = [capacity]                               # max_transaction_amount
-    # amount_distribution_0 = "gaussian"
-    # amount_distribution_0_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
+    amount_distribution_0 = "gaussian"
+    amount_distribution_0_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
     # amount_distribution_0 = "pareto"
     # amount_distribution_0_parameters = [1, 1.16, 1]                             # lower, shape, size
     # amount_distribution_0 = "powerlaw"
     # amount_distribution_0_parameters = ...
 
-    amount_distribution_1 = "constant"
-    amount_distribution_1_parameters = [50]                                      # value of all transactions
+    # amount_distribution_1 = "constant"
+    # amount_distribution_1_parameters = [50]                                      # value of all transactions
     # amount_distribution_1 = "uniform"
     # amount_distribution_1_parameters = [capacity]                               # max_transaction_amount
-    # amount_distribution_1 = "gaussian"
-    # amount_distribution_1_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
+    amount_distribution_1 = "gaussian"
+    amount_distribution_1_parameters = [capacity, capacity/2, capacity/6]       # max_transaction_amount, gaussian_mean, gaussian_variance
     # amount_distribution_1 = "pareto"
     # amount_distribution_1_parameters = [1, 1.16, 1]                             # lower, shape, size
     # amount_distribution_1 = "powerlaw"
@@ -106,7 +106,7 @@ def main():
     traj.f_add_parameter('who_has_buffer', "none", comment='Which node has a buffer')
     traj.f_add_parameter('immediate_processing', True,
                          comment='Immediate processing of incoming transactions if feasible')
-    traj.f_add_parameter('processing_order', "oldest_transaction_first",
+    traj.f_add_parameter('scheduling_policy', "oldest_transaction_first",
                          comment='Order of processing transactions in the buffer')
 
     traj.f_add_parameter('verbose', True, comment='Verbose output')
@@ -118,12 +118,12 @@ def main():
 
     traj.f_explore(pypet.cartesian_product({
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            'who_has_buffer': ["both_shared"],     # optimal_policy requires both_separate
+                                            'who_has_buffer': ["only_node_0"],     # PMDE requires both_separate
                                             'immediate_processing': [False],
                                             # 'immediate_processing': [True, False],
-                                            'processing_order': ["oldest_transaction_first"],
-                                            # 'processing_order': ["oldest_transaction_first", "closest_deadline_first", "optimal_policy"],
-                                            # 'processing_order': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "optimal_policy"],
+                                            'scheduling_policy': ["PMDE"],
+                                            # 'scheduling_policy': ["oldest_transaction_first", "closest_deadline_first", "PMDE"],
+                                            # 'scheduling_policy': ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first", "PMDE"],
                                             'max_buffering_time': [5],
                                             # 'max_buffering_time': range(0,300,50),
                                             # 'max_buffering_time': list(range(0, 100, 10)) + list(range(100, 300+1, 50)),
