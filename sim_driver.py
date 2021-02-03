@@ -1,39 +1,48 @@
-import numpy as np
 import pypet
 from simulate_channel import *
-import pandas as pd
 
 
 def pypet_wrapper(traj):
     node_0_parameters = [traj.initial_balance_0, traj.total_transactions_0, traj.exp_mean_0, traj.amount_distribution_0, traj.amount_distribution_parameters_0, traj.deadline_distribution_0]
     node_1_parameters = [traj.initial_balance_1, traj.total_transactions_1, traj.exp_mean_1, traj.amount_distribution_1, traj.amount_distribution_parameters_1, traj.deadline_distribution_1]
 
-    sr, thr, sac, atl = simulate_channel(node_0_parameters, node_1_parameters,
-                                         traj.scheduling_policy, traj.immediate_processing,
-                                         traj.who_has_buffer, traj.max_buffering_time,
-                                         traj.verbose, traj.seed)
+    results, all_transactions_list = simulate_channel(node_0_parameters, node_1_parameters,
+                                                         traj.scheduling_policy, traj.immediate_processing,
+                                                         traj.who_has_buffer, traj.max_buffering_time,
+                                                         traj.verbose, traj.seed)
 
-    traj.f_add_result('success_rate_0', sr[0], comment='Success rate of node 0')
-    traj.f_add_result('success_rate_1', sr[1], comment='Success rate of node 1')
-    traj.f_add_result('success_rate_total', sr[2], comment='Total channel success rate')
-    traj.f_add_result('throughput_0', thr[0], comment='Throughput for node 0')
-    traj.f_add_result('throughput_1', thr[1], comment='Throughput for node 1')
-    # traj.f_add_result('balance_history_node_0_times', bh0[0], comment='Times when balance history of node 0 changes')
-    # traj.f_add_result('balance_history_node_0_values', bh0[1], comment='Balance history of node 0')
-    traj.f_add_result('sacrificed_0', int(sac[0]), comment='Number of sacrificed transactions for node 0')
-    traj.f_add_result('sacrificed_1', int(sac[1]), comment='Number of sacrificed transactions for node 1')
-    traj.f_add_result('all_transactions_list', atl, 'All transactions')
-    # traj.f_add_result('all_transactions_list_node_0', atl[0], 'All transactions for node 0')
-    # traj.f_add_result('all_transactions_list_node_1', atl[1], 'All transactions for node 1')
-    # traj.f_add_result('all_transactions_list_node_0', pd.DataFrame(atl[0]), 'All transactions for node 0')
-    # traj.f_add_result('all_transactions_list_node_1', pd.DataFrame(atl[1]), 'All transactions for node 1')
+    traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
+    traj.f_add_result('success_count_node_1', results['success_counts'][1], comment='Number of successful transactions (node 1)')
+    traj.f_add_result('success_count_channel_total', results['success_counts'][2], comment='Number of successful transactions (channel total)')
+    traj.f_add_result('arrived_count_node_0', results['arrived_counts'][0], comment='Number of transactions that arrived (node 0)')
+    traj.f_add_result('arrived_count_node_1', results['arrived_counts'][1], comment='Number of transactions that arrived (node 1)')
+    traj.f_add_result('arrived_count_channel_total', results['arrived_counts'][2], comment='Number of transactions that arrived (channel total)')
+    traj.f_add_result('throughput_node_0', results['throughputs'][0], comment='Throughput (Amount of successful transactions) (node 0)')
+    traj.f_add_result('throughput_node_1', results['throughputs'][1], comment='Throughput (Amount of successful transactions) (node 1)')
+    traj.f_add_result('throughput_channel_total', results['throughputs'][2], comment='Throughput (Amount of successful transactions) (channel total)')
+    traj.f_add_result('arrived_amount_node_0', results['arrived_amounts'][0], comment='Amount of transactions that arrived (node 0)')
+    traj.f_add_result('arrived_amount_node_1', results['arrived_amounts'][1], comment='Amount of transactions that arrived (node 1)')
+    traj.f_add_result('arrived_amount_channel_total', results['arrived_amounts'][2], comment='Amount of transactions that arrived (channel total)')
+    traj.f_add_result('sacrificed_count_node_0', results['sacrificed_counts'][0], comment='Number of sacrificed transactions (node 0)')
+    traj.f_add_result('sacrificed_count_node_1', results['sacrificed_counts'][1], comment='Number of sacrificed transactions (node 1)')
+    traj.f_add_result('sacrificed_count_channel_total', results['sacrificed_counts'][2], comment='Number of sacrificed transactions (channel total)')
+    traj.f_add_result('sacrificed_amount_node_0', results['sacrificed_amounts'][0], comment='Amount of sacrificed transactions (node 0)')
+    traj.f_add_result('sacrificed_amount_node_1', results['sacrificed_amounts'][1], comment='Amount of sacrificed transactions (node 1)')
+    traj.f_add_result('sacrificed_amount_channel_total', results['sacrificed_amounts'][2], comment='Amount of sacrificed transactions (channel total)')
+    traj.f_add_result('success_rate_node_0', results['success_rates'][0], comment='Success rate (node 0)')
+    traj.f_add_result('success_rate_node_1', results['success_rates'][1], comment='Success rate (node 1)')
+    traj.f_add_result('success_rate_channel_total', results['success_rates'][2], comment='Success rate (channel total)')
+    traj.f_add_result('normalized_throughput_node_0', results['normalized_throughputs'][0], comment='Normalized throughput (node 0)')
+    traj.f_add_result('normalized_throughput_node_1', results['normalized_throughputs'][1], comment='Normalized throughput (node 1)')
+    traj.f_add_result('normalized_throughput_channel_total', results['normalized_throughputs'][2], comment='Normalized throughput (channel total)')
+
+    traj.f_add_result('all_transactions_list', all_transactions_list, 'All transactions')
+
 
 
 def main():
-    np.set_printoptions(precision=2)
-
     # Create the environment
-    env = pypet.Environment(trajectory='single_channel_buffering',
+    env = pypet.Environment(trajectory='single_payment_channel_scheduling',
                             filename='./HDF5/results_01.hdf5',
                             overwrite_file=True)
     traj = env.traj
