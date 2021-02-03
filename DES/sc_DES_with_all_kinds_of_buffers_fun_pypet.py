@@ -65,12 +65,12 @@ class Transaction:
 
 
 # class BufferedTransaction:
-#     def __init__(self, t, processing_order):
+#     def __init__(self, t, scheduling_policy):
 #         self.t = t
-#         self.processing_order = processing_order
+#         self.scheduling_policy = scheduling_policy
 #
 #     def _cmp_key(self):
-#         return self.t, self.processing_order
+#         return self.t, self.scheduling_policy
 #
 #     def __eq__(self, other):
 #         # noinspection PyProtectedMember
@@ -80,19 +80,19 @@ class Transaction:
 #     #     return self._cmp_key() < other._cmp_key()
 #
 #     def __lt__(self, other):
-#         if self.processing_order == "oldest_transaction_first":
+#         if self.scheduling_policy == "oldest_transaction_first":
 #             return self.t.time >= other.t.time
-#         elif self.processing_order == "youngest_transaction_first":
+#         elif self.scheduling_policy == "youngest_transaction_first":
 #             return self.t.time <= other.t.time
-#         elif self.processing_order == "closest_deadline_first":
+#         elif self.scheduling_policy == "closest_deadline_first":
 #             return self.t.time + self.t.max_buffering_time <= other.t.time + other.t.max_buffering_time
-#         elif self.processing_order == "largest_amount_first":
+#         elif self.scheduling_policy == "largest_amount_first":
 #             return self.t.amount >= other.t.amount
-#         elif self.processing_order == "smallest_amount_first":
+#         elif self.scheduling_policy == "smallest_amount_first":
 #             return self.t.amount <= other.t.amount
 #         # elif optimal....
 #         else:
-#             print("Input error: {} is not a valid 'processing_order' value.".format(self.processing_order))
+#             print("Input error: {} is not a valid 'scheduling_policy' value.".format(self.scheduling_policy))
 #             sys.exit(1)
 #
 #     def __repr__(self):
@@ -101,7 +101,7 @@ class Transaction:
 
 class Channel:
 
-    def __init__(self, env, node0, node1, capacity, balances, who_has_buffer, immediate_processing, processing_order, verbose,
+    def __init__(self, env, node0, node1, capacity, balances, who_has_buffer, immediate_processing, scheduling_policy, verbose,
                  total_simulation_time_estimation):
         self.env = env
         self.node0 = node0
@@ -119,18 +119,18 @@ class Channel:
         if who_has_buffer == "none":
             self.buffers = [None, None]
         elif who_has_buffer == "only_node_0":
-            self.buffers = [Buffer(env, node0, self, processing_order, verbose, total_simulation_time_estimation), None]
+            self.buffers = [Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation), None]
             self.env.process(self.buffers[0].run())
         elif who_has_buffer == "only_node_1":
-            self.buffers = [None, Buffer(env, node1, self, processing_order, verbose, total_simulation_time_estimation)]
+            self.buffers = [None, Buffer(env, node1, self, scheduling_policy, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and processing_order == "optimal_policy"):
-            self.buffers = [Buffer(env, node0, self, processing_order, verbose, total_simulation_time_estimation),
-                            Buffer(env, node1, self, processing_order, verbose, total_simulation_time_estimation)]
+        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and scheduling_policy == "PMDE"):
+            self.buffers = [Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation),
+                            Buffer(env, node1, self, scheduling_policy, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_shared") and (processing_order != "optimal_policy"):
-            shared_buffer = Buffer(env, node0, self, processing_order, verbose, total_simulation_time_estimation)
+        elif (who_has_buffer == "both_shared") and (scheduling_policy != "PMDE"):
+            shared_buffer = Buffer(env, node0, self, scheduling_policy, verbose, total_simulation_time_estimation)
             self.buffers = [shared_buffer, shared_buffer]
             self.env.process(self.buffers[0].run())
         else:
@@ -243,8 +243,8 @@ class Channel:
     def add_transaction_to_buffer(self, t):
         # self.buffers[t.from_node].transaction_list.append(t)
 
-        # processing_order = self.buffers[t.from_node].processing_order
-        # self.buffers[t.from_node].transaction_list.append(BufferedTransaction(t, processing_order))
+        # scheduling_policy = self.buffers[t.from_node].scheduling_policy
+        # self.buffers[t.from_node].transaction_list.append(BufferedTransaction(t, scheduling_policy))
         self.buffers[t.from_node].transaction_list.add(t)
 
         # print(self.buffers[t.from_node].transaction_list)
@@ -272,7 +272,7 @@ class Channel:
         else:
             t.initially_feasible = False
 
-        if BE and self.buffers[t.from_node].processing_order == "optimal_policy":      # optimal policy
+        if BE and self.buffers[t.from_node].scheduling_policy == "PMDE":      # optimal policy
             if not BE and FE:   # process
                 self.execute_feasible_transaction(t)
             elif BE:
@@ -382,36 +382,36 @@ class Channel:
 
 
 class Buffer:
-    def __init__(self, env, node, channel, processing_order, verbose, total_simulation_time_estimation):
+    def __init__(self, env, node, channel, scheduling_policy, verbose, total_simulation_time_estimation):
         self.env = env
         self.node = node
         self.channel = channel
         # self.max_buffering_time = max_buffering_time
-        self.processing_order = processing_order
+        self.scheduling_policy = scheduling_policy
         self.verbose = verbose
         self.total_simulation_time_estimation = total_simulation_time_estimation
         # self.total_successes = 0
 
-        if self.processing_order == "oldest_transaction_first":
+        if self.scheduling_policy == "oldest_transaction_first":
             key = lambda t: t.time
-        elif self.processing_order == "youngest_transaction_first":
+        elif self.scheduling_policy == "youngest_transaction_first":
             key = lambda t: - t.time
-        elif self.processing_order in ["closest_deadline_first", "optimal_policy"]:
+        elif self.scheduling_policy in ["closest_deadline_first", "PMDE"]:
             key = lambda t: t.time + t.max_buffering_time
-        elif self.processing_order == "largest_amount_first":
+        elif self.scheduling_policy == "largest_amount_first":
             key = lambda t: t.amount
-        elif self.processing_order == "smallest_amount_first":
+        elif self.scheduling_policy == "smallest_amount_first":
             key = lambda t: - t.amount
         # elif optimal....
         else:
-            print("Input error: {} is not a valid 'processing_order' value.".format(self.processing_order))
+            print("Input error: {} is not a valid 'scheduling_policy' value.".format(self.scheduling_policy))
             sys.exit(1)
 
         self.transaction_list = sc.SortedKeyList(key=key)
         # self.transaction_list.__repr__ = lambda skl: list(skl)
 
     def run(self):
-        if self.processing_order in ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"]:
+        if self.scheduling_policy in ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"]:
             # while True:
             while self.env.now <= self.total_simulation_time_estimation:
                 # s = self.process_buffer()
@@ -543,14 +543,19 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
 def sc_DES_with_all_kinds_of_buffers_fun(initial_balances,
                                          total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_0_parameters, deadline_distribution_0, max_buffering_time_0,
                                          total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_1_parameters, deadline_distribution_1, max_buffering_time_1,
-                                         who_has_buffer, immediate_processing, processing_order,
+                                         who_has_buffer, immediate_processing, scheduling_policy,
                                          verbose, seed):
+
+    if (scheduling_policy == "PMDE") and (immediate_processing is True):
+        print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
+        sys.exit(1)
+
     total_simulation_time_estimation = max(total_transactions_0 * 1 / exp_mean_0, total_transactions_1 * 1 / exp_mean_1)
     random.seed(seed)
 
     env = simpy.Environment()
 
-    channel = Channel(env, 0, 1, sum(initial_balances), initial_balances, who_has_buffer, immediate_processing, processing_order, verbose,
+    channel = Channel(env, 0, 1, sum(initial_balances), initial_balances, who_has_buffer, immediate_processing, scheduling_policy, verbose,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
