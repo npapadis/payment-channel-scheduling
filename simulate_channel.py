@@ -61,7 +61,7 @@ class Transaction:
                 yield self.env.process(self.channel.process_transaction(self))              # Once the channel belongs to the transaction, try to process it.
 
     def __repr__(self):
-        return "%d->%d t=%.2f D=%d a=%d" % (self.from_node, self.to_node, self.time, self.max_buffering_time, self.amount)
+        return "%d->%d t=%.2f D=%.2f a=%d" % (self.from_node, self.to_node, self.time, self.max_buffering_time, self.amount)
 
 
 class Channel:
@@ -157,7 +157,7 @@ class Channel:
             print("Time {:.2f}: Error in process_transaction(): attempt to process non-pending transaction (of status \"{}\").".format(self.env.now, t.status))
             sys.exit(1)
 
-        IP = self.immediate_processing is True          # Immediate Processing
+        IP = self.immediate_processing                  # Immediate Processing
         BE = self.buffers[t.from_node] is not None      # Buffer Exists
         FT = t.buffered is False                        # First Time
         FE = t.amount <= self.balances[t.from_node]     # FEasible
@@ -273,7 +273,7 @@ class Channel:
                 # self.channel_link.release(request)
                 sys.exit(1)
         else:
-            print("{} is not a valid scheduling policy. Exiting.".format(self.scheduling_policy))
+            print("Input error: {} is not a valid scheduling policy. Exiting.".format(self.scheduling_policy))
             # self.channel_link.release(request)
             sys.exit(1)
 
@@ -293,7 +293,7 @@ class Buffer:
         self.verbose = verbose
         self.total_simulation_time_estimation = total_simulation_time_estimation
         # self.total_successes = 0
-        self.check_interval = 1
+        self.check_interval = 3
 
         if self.buffer_discipline == "oldest_first":
             key = lambda t: t.time
@@ -382,7 +382,7 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
             t = Transaction(env, channel, env.now, from_node, to_node, amount, max_buffering_time, verbose)
         elif deadline_distribution == "uniform":
             # max_buffering_time = deadline_distribution_parameters[0]
-            initial_deadline = random.randint(0, max_buffering_time) if max_buffering_time > 0 else 0
+            initial_deadline = random.uniform(0, max_buffering_time) if max_buffering_time > 0 else 0
             t = Transaction(env, channel, env.now, from_node, to_node, amount, initial_deadline, verbose)
         else:
             # print("Input error: {} is not a supported deadline distribution or the parameters {} given are invalid.".format(deadline_distribution, deadline_distribution_parameters))
@@ -486,12 +486,12 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
         'normalized_throughputs': [normalized_throughput_node_0, normalized_throughput_node_1, normalized_throughput_channel_total]
     }
 
-    if verbose:
-        print("Total success rate: {:.2f}".format(success_count_channel_total/arrived_count_channel_total))
-        print("Total normalized throughput: {:.2f}".format(throughput_channel_total/arrived_amount_channel_total))
-        print("Number of sacrificed transactions (node 0, node 1, total): {}".format(sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total))
-        if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
-        if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
+    # if verbose:
+    print("Total success rate: {:.2f}".format(success_count_channel_total/arrived_count_channel_total))
+    print("Total normalized throughput: {:.2f}".format(throughput_channel_total/arrived_amount_channel_total))
+    print("Number of sacrificed transactions (node 0, node 1, total): {}, {}, {}".format(sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total))
+        # if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
+        # if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
 
     for t in all_transactions_list:
         del t.env
