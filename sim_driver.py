@@ -1,7 +1,8 @@
 import pypet
 from simulate_channel import *
-# import csv
-# from statsmodels.distributions.empirical_distribution import ECDF
+import csv
+from statsmodels.distributions.empirical_distribution import ECDF
+from math import floor, ceil
 
 def pypet_wrapper(traj):
     node_0_parameters = [traj.initial_balance_0, traj.total_transactions_0, traj.exp_mean_0, traj.amount_distribution_0, traj.amount_distribution_parameters_0, traj.deadline_distribution_0]
@@ -12,24 +13,24 @@ def pypet_wrapper(traj):
                                                          traj.who_has_buffer, traj.max_buffering_time,
                                                          traj.verbose, traj.seed)
 
-    traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
-    traj.f_add_result('success_count_node_1', results['success_counts'][1], comment='Number of successful transactions (node 1)')
-    traj.f_add_result('success_count_channel_total', results['success_counts'][2], comment='Number of successful transactions (channel total)')
-    traj.f_add_result('arrived_count_node_0', results['arrived_counts'][0], comment='Number of transactions that arrived (node 0)')
-    traj.f_add_result('arrived_count_node_1', results['arrived_counts'][1], comment='Number of transactions that arrived (node 1)')
-    traj.f_add_result('arrived_count_channel_total', results['arrived_counts'][2], comment='Number of transactions that arrived (channel total)')
-    traj.f_add_result('throughput_node_0', results['throughputs'][0], comment='Throughput (Amount of successful transactions) (node 0)')
-    traj.f_add_result('throughput_node_1', results['throughputs'][1], comment='Throughput (Amount of successful transactions) (node 1)')
-    traj.f_add_result('throughput_channel_total', results['throughputs'][2], comment='Throughput (Amount of successful transactions) (channel total)')
-    traj.f_add_result('arrived_amount_node_0', results['arrived_amounts'][0], comment='Amount of transactions that arrived (node 0)')
-    traj.f_add_result('arrived_amount_node_1', results['arrived_amounts'][1], comment='Amount of transactions that arrived (node 1)')
-    traj.f_add_result('arrived_amount_channel_total', results['arrived_amounts'][2], comment='Amount of transactions that arrived (channel total)')
-    traj.f_add_result('sacrificed_count_node_0', results['sacrificed_counts'][0], comment='Number of sacrificed transactions (node 0)')
-    traj.f_add_result('sacrificed_count_node_1', results['sacrificed_counts'][1], comment='Number of sacrificed transactions (node 1)')
-    traj.f_add_result('sacrificed_count_channel_total', results['sacrificed_counts'][2], comment='Number of sacrificed transactions (channel total)')
-    traj.f_add_result('sacrificed_amount_node_0', results['sacrificed_amounts'][0], comment='Amount of sacrificed transactions (node 0)')
-    traj.f_add_result('sacrificed_amount_node_1', results['sacrificed_amounts'][1], comment='Amount of sacrificed transactions (node 1)')
-    traj.f_add_result('sacrificed_amount_channel_total', results['sacrificed_amounts'][2], comment='Amount of sacrificed transactions (channel total)')
+    # traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
+    # traj.f_add_result('success_count_node_1', results['success_counts'][1], comment='Number of successful transactions (node 1)')
+    # traj.f_add_result('success_count_channel_total', results['success_counts'][2], comment='Number of successful transactions (channel total)')
+    # traj.f_add_result('arrived_count_node_0', results['arrived_counts'][0], comment='Number of transactions that arrived (node 0)')
+    # traj.f_add_result('arrived_count_node_1', results['arrived_counts'][1], comment='Number of transactions that arrived (node 1)')
+    # traj.f_add_result('arrived_count_channel_total', results['arrived_counts'][2], comment='Number of transactions that arrived (channel total)')
+    # traj.f_add_result('throughput_node_0', results['throughputs'][0], comment='Throughput (Amount of successful transactions) (node 0)')
+    # traj.f_add_result('throughput_node_1', results['throughputs'][1], comment='Throughput (Amount of successful transactions) (node 1)')
+    # traj.f_add_result('throughput_channel_total', results['throughputs'][2], comment='Throughput (Amount of successful transactions) (channel total)')
+    # traj.f_add_result('arrived_amount_node_0', results['arrived_amounts'][0], comment='Amount of transactions that arrived (node 0)')
+    # traj.f_add_result('arrived_amount_node_1', results['arrived_amounts'][1], comment='Amount of transactions that arrived (node 1)')
+    # traj.f_add_result('arrived_amount_channel_total', results['arrived_amounts'][2], comment='Amount of transactions that arrived (channel total)')
+    # traj.f_add_result('sacrificed_count_node_0', results['sacrificed_counts'][0], comment='Number of sacrificed transactions (node 0)')
+    # traj.f_add_result('sacrificed_count_node_1', results['sacrificed_counts'][1], comment='Number of sacrificed transactions (node 1)')
+    # traj.f_add_result('sacrificed_count_channel_total', results['sacrificed_counts'][2], comment='Number of sacrificed transactions (channel total)')
+    # traj.f_add_result('sacrificed_amount_node_0', results['sacrificed_amounts'][0], comment='Amount of sacrificed transactions (node 0)')
+    # traj.f_add_result('sacrificed_amount_node_1', results['sacrificed_amounts'][1], comment='Amount of sacrificed transactions (node 1)')
+    # traj.f_add_result('sacrificed_amount_channel_total', results['sacrificed_amounts'][2], comment='Amount of sacrificed transactions (channel total)')
     traj.f_add_result('success_rate_node_0', results['success_rates'][0], comment='Success rate (node 0)')
     traj.f_add_result('success_rate_node_1', results['success_rates'][1], comment='Success rate (node 1)')
     traj.f_add_result('success_rate_channel_total', results['success_rates'][2], comment='Success rate (channel total)')
@@ -37,21 +38,21 @@ def pypet_wrapper(traj):
     traj.f_add_result('normalized_throughput_node_1', results['normalized_throughputs'][1], comment='Normalized throughput (node 1)')
     traj.f_add_result('normalized_throughput_channel_total', results['normalized_throughputs'][2], comment='Normalized throughput (channel total)')
 
-    traj.f_add_result('all_transactions_list', all_transactions_list, 'All transactions')
+    # traj.f_add_result('all_transactions_list', all_transactions_list, 'All transactions')
 
 
 
 def main():
     # Create the environment
     env = pypet.Environment(trajectory='single_payment_channel_scheduling',
-                            filename='./HDF5/results_87.hdf5',
+                            filename='./HDF5/results_105.hdf5',
                             overwrite_file=True)
     traj = env.traj
-    # EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
+    EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
 
     # SIMULATION PARAMETERS
 
-    verbose = False
+    verbose = True
     num_of_experiments = 1
 
     # Node 0
@@ -61,9 +62,12 @@ def main():
     # amount_distribution_0 = "constant"
     # amount_distribution_parameters_0 = [50]                                      # value of all transactions
     # amount_distribution_0 = "uniform"
-    # amount_distribution_parameters_0 = [300]                               # max_transaction_amount
-    amount_distribution_0 = "gaussian"
-    amount_distribution_parameters_0 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    # amount_distribution_parameters_0 = [100]                               # max_transaction_amount
+    # amount_distribution_0 = "gaussian"
+    # amount_distribution_parameters_0 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    amount_distribution_0 = "empirical_from_csv_file"
+    amount_distribution_parameters_0 = [EMPIRICAL_DATA_FILEPATH]
+
     deadline_distribution_0 = "uniform"
 
     # Node 1
@@ -73,9 +77,12 @@ def main():
     # amount_distribution_1 = "constant"
     # amount_distribution_parameters_1 = [50]                                      # value of all transactions
     # amount_distribution_1 = "uniform"
-    # amount_distribution_parameters_1 = [300]                               # max_transaction_amount
-    amount_distribution_1 = "gaussian"
-    amount_distribution_parameters_1 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    # amount_distribution_parameters_1 = [100]                               # max_transaction_amount
+    # amount_distribution_1 = "gaussian"
+    # amount_distribution_parameters_1 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    amount_distribution_1 = "empirical_from_csv_file"
+    amount_distribution_parameters_1 = [EMPIRICAL_DATA_FILEPATH]
+
     deadline_distribution_1 = "uniform"
 
     # if (amount_distribution_0 == "empirical_from_csv_file") or (amount_distribution_1 == "empirical_from_csv_file"):
@@ -91,7 +98,23 @@ def main():
     #
     # print(ecdf)
     # exit(-1)
-            
+
+    capacity = initial_balance_0 + initial_balance_1
+    if amount_distribution_0 == "empirical_from_csv_file" or amount_distribution_1 == "empirical_from_csv_file":
+        EMPIRICAL_DATA_FILEPATH = amount_distribution_parameters_0[0] if amount_distribution_0 == "empirical_from_csv_file" else amount_distribution_parameters_1[0]
+        # empirical_data = recfromcsv(EMPIRICAL_DATA_FILEPATH, dtype=float, delimiter=',')
+        with open(EMPIRICAL_DATA_FILEPATH, newline='') as f:
+            reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
+            empirical_data = list(reader)
+            empirical_data = [ceil(x[0]) for x in empirical_data if (0 < x[0] <= capacity)]  # Convert to float from list
+            # empirical_data = [50,100]
+            # data_size = len(empirical_data)
+        if amount_distribution_0 == "empirical_from_csv_file":
+            amount_distribution_parameters_0 = empirical_data
+        if amount_distribution_1 == "empirical_from_csv_file":
+            amount_distribution_parameters_1 = empirical_data
+
+
     # amount_distribution_0 = "constant"
     # amount_distribution_parameters_0 = [50]                                      # value of all transactions
     # amount_distribution_0 = "uniform"
@@ -160,14 +183,14 @@ def main():
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434, 63664, 25704, 38368, 45271, 34425]
 
     traj.f_explore(pypet.cartesian_product({
-                                            'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
-                                            'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
-                                            # 'buffer_discipline': ["largest_amount_first"],
+                                            # 'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
+                                            'scheduling_policy': ["PMDE"],
+                                            # 'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
+                                            'buffer_discipline': ["oldest_first"],
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             'who_has_buffer': ["both_shared"],
-                                            # 'max_buffering_time': [5],
-                                            # 'max_buffering_time': range(0,300,50),
-                                            'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
+                                            'max_buffering_time': [10],
+                                            # 'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
 
     # Run wrapping function instead of simulator directly

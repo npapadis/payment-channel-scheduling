@@ -21,12 +21,15 @@ To-do (?): Terminate simulation at maximum simulation time, not when a certain n
 to avoid rejecting the remaining transactions in the buffers, which could have been successful if more transactions were arriving.
 """
 
-from numpy import random
+
+from numpy import random, recfromcsv
 import simpy
 import sys
 # import powerlaw
 import pandas as pd
 import sortedcontainers as sc
+import csv
+from statsmodels.distributions.empirical_distribution import ECDF
 
 # sc.SortedKeyList.__repr__ = lambda skl: list(skl)
 
@@ -365,13 +368,17 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
             gaussian_mean = amount_distribution_parameters[1]
             gaussian_variance = amount_distribution_parameters[2]
             amount = round(max(1, min(max_transaction_amount, random.normal(gaussian_mean, gaussian_variance))))
-        elif amount_distribution == "pareto":
-            lower = amount_distribution_parameters[0]  # the lower end of the support
-            shape = amount_distribution_parameters[1]  # the distribution shape parameter, also known as `a` or `alpha`
-            size = amount_distribution_parameters[2]  # the size of your sample (number of random values)
-            amount = random.pareto(shape, size) + lower
+        # elif amount_distribution == "pareto":
+        #     lower = amount_distribution_parameters[0]  # the lower end of the support
+        #     shape = amount_distribution_parameters[1]  # the distribution shape parameter, also known as `a` or `alpha`
+        #     size = amount_distribution_parameters[2]  # the size of your sample (number of random values)
+        #     amount = random.pareto(shape, size) + lower
         # elif amount_distribution == "powerlaw":
             # powerlaw.Power_Law(xmin=1, xmax=2, discrete=True, parameters=[1.16]).generate_random(n=10)
+        elif amount_distribution == "empirical_from_csv_file":
+            dataset = amount_distribution_parameters[0]
+            data_size = amount_distribution_parameters[1]
+            amount = dataset[random.randint(0, data_size)]
         else:
             print("Input error: {} is not a supported amount distribution or the parameters {} given are invalid.".format(amount_distribution, amount_distribution_parameters))
             sys.exit(1)
@@ -399,11 +406,6 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
 
 def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, verbose, seed):
 
-    # if (scheduling_policy == "PMDE") and (immediate_processing is True):
-    #     # print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
-    #     print("Warning: A True value for immediate_processing has no effect when using the PMDE policy.")
-    #     # sys.exit(1)
-
     initial_balance_0 = node_0_parameters[0]
     total_transactions_0 = node_0_parameters[1]
     exp_mean_0 = node_0_parameters[2]
@@ -418,6 +420,11 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
     amount_distribution_parameters_1 = node_1_parameters[4]
     deadline_distribution_1 = node_1_parameters[5]
 
+    if amount_distribution_0 == "empirical_from_csv_file":
+        amount_distribution_parameters_0 = [amount_distribution_parameters_0, len(amount_distribution_parameters_0)]
+    if amount_distribution_1 == "empirical_from_csv_file":
+        amount_distribution_parameters_1 = [amount_distribution_parameters_1, len(amount_distribution_parameters_1)]
+
     total_simulation_time_estimation = max(total_transactions_0 * 1 / exp_mean_0, total_transactions_1 * 1 / exp_mean_1)
     random.seed(seed)
 
@@ -431,8 +438,6 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
                                       deadline_distribution_0, max_buffering_time, all_transactions_list, verbose))
     env.process(transaction_generator(env, channel, 1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_parameters_1,
                                       deadline_distribution_1, max_buffering_time, all_transactions_list, verbose))
-    # env.process(transaction_generator(env, 0, total_transactions_0, max_transaction_amount_0, exp_mean_0))
-    # env.process(transaction_generator(env, 1, total_transactions_1, max_transaction_amount_1, exp_mean_1))
 
     env.run()
 
