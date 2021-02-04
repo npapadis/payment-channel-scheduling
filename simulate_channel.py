@@ -66,15 +66,16 @@ class Transaction:
 
 class Channel:
 
-    def __init__(self, env, node0, node1, balances, who_has_buffer, immediate_processing, scheduling_policy, verbose,
+    def __init__(self, env, node0, node1, balances, who_has_buffer, scheduling_policy, buffer_discipline, verbose,
                  total_simulation_time_estimation):
         self.env = env
         self.node0 = node0
         self.node1 = node1
         self.capacity = balances[0] + balances[1]
         self.balances = balances
-        self.immediate_processing = immediate_processing
         self.scheduling_policy = scheduling_policy
+        self.buffer_discipline = buffer_discipline
+        self.immediate_processing = True if (scheduling_policy == "PRI-IP") else False
         self.verbose = verbose
         self.channel_link = simpy.Resource(env, capacity=1)
         self.successful_transactions = [0, 0]
@@ -85,18 +86,18 @@ class Channel:
         if who_has_buffer == "none":
             self.buffers = [None, None]
         elif who_has_buffer == "only_node_0":
-            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation), None]
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation), None]
             self.env.process(self.buffers[0].run())
         elif who_has_buffer == "only_node_1":
-            self.buffers = [None, Buffer(env, node1, self, self.scheduling_policy, verbose, total_simulation_time_estimation)]
+            self.buffers = [None, Buffer(env, node1, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
         elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and self.scheduling_policy == "PMDE"):
-            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation),
-                            Buffer(env, node1, self, self.scheduling_policy, verbose, total_simulation_time_estimation)]
+            self.buffers = [Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation),
+                            Buffer(env, node1, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
         elif (who_has_buffer == "both_shared") and (self.scheduling_policy != "PMDE"):
-            shared_buffer = Buffer(env, node0, self, self.scheduling_policy, verbose, total_simulation_time_estimation)
+            shared_buffer = Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)
             self.buffers = [shared_buffer, shared_buffer]
             self.env.process(self.buffers[0].run())
         else:
@@ -168,7 +169,7 @@ class Channel:
         else:
             t.initially_feasible = False
 
-        if self.scheduling_policy == "PMDE":      # optimal policy
+        if self.scheduling_policy == "PMDE":
             if not BE and FE:   # process
                 self.execute_feasible_transaction(t)
             elif BE:
@@ -248,7 +249,7 @@ class Channel:
                 self.reject_transaction(t)
                 return False
 
-        else:                                                                   # heuristic policy
+        elif (self.scheduling_policy == "PRI-IP") or (self.scheduling_policy == "PRI-NIP"):
             if (IP and BE and FT and FE) or (IP and BE and not FT and FE) or (IP and not BE and FT and FE) or (
                     not IP and BE and not FT and FE):  # process
                     # Once the channel belongs to the transaction, then if the deadline has not expired, try to process it.
@@ -271,6 +272,10 @@ class Channel:
                 print("Unreachable state reached. Exiting.")
                 # self.channel_link.release(request)
                 sys.exit(1)
+        else:
+            print("{} is not a valid scheduling policy. Exiting.".format(self.scheduling_policy))
+            # self.channel_link.release(request)
+            sys.exit(1)
 
     def print_buffers(self):
         if self.buffers[0] is not None: print("Time {:.2f}: Buffer 0: {}".format(self.env.now, list(self.buffers[0].transaction_list)))
@@ -278,37 +283,38 @@ class Channel:
 
 
 class Buffer:
-    def __init__(self, env, node, channel, scheduling_policy, verbose, total_simulation_time_estimation):
+    def __init__(self, env, node, channel, scheduling_policy, buffer_discipline, verbose, total_simulation_time_estimation):
         self.env = env
         self.node = node
         self.channel = channel
         # self.max_buffering_time = max_buffering_time
         self.scheduling_policy = scheduling_policy
+        self.buffer_discipline = buffer_discipline
         self.verbose = verbose
         self.total_simulation_time_estimation = total_simulation_time_estimation
         # self.total_successes = 0
         self.check_interval = 1
 
-        if self.scheduling_policy == "oldest_transaction_first":
+        if self.buffer_discipline == "oldest_first":
             key = lambda t: t.time
-        elif self.scheduling_policy == "youngest_transaction_first":
+        elif self.buffer_discipline == "youngest_first":
             key = lambda t: - t.time
-        elif self.scheduling_policy in ["closest_deadline_first", "PMDE"]:
+        elif self.buffer_discipline == "closest_deadline_first":
             key = lambda t: t.time + t.max_buffering_time
-        elif self.scheduling_policy == "largest_amount_first":
+        elif self.buffer_discipline == "largest_amount_first":
             key = lambda t: t.amount
-        elif self.scheduling_policy == "smallest_amount_first":
+        elif self.buffer_discipline == "smallest_amount_first":
             key = lambda t: - t.amount
         # elif optimal....
         else:
-            print("Input error: {} is not a valid 'scheduling_policy' value.".format(self.scheduling_policy))
+            print("Input error: {} is not a valid 'buffer_discipline' value.".format(self.buffer_discipline))
             sys.exit(1)
 
         self.transaction_list = sc.SortedKeyList(key=key)
         # self.transaction_list.__repr__ = lambda skl: list(skl)
 
     def run(self):
-        if self.scheduling_policy in ["oldest_transaction_first", "youngest_transaction_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"]:
+        if self.scheduling_policy in ["PRI-IP", "PRI-NIP"]:
             # while True:
             while self.env.now <= self.total_simulation_time_estimation:
                 # s = self.process_buffer()
@@ -391,12 +397,12 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
         yield env.timeout(time_to_next_arrival)
 
 
-def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, immediate_processing, who_has_buffer, max_buffering_time, verbose, seed):
+def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, verbose, seed):
 
-    if (scheduling_policy == "PMDE") and (immediate_processing is True):
-        # print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
-        print("Warning: A True value for immediate_processing has no effect when using the PMDE policy.")
-        # sys.exit(1)
+    # if (scheduling_policy == "PMDE") and (immediate_processing is True):
+    #     # print("Input error: Using the PMDE policy requires immediate_processing to have False value, but True was given.")
+    #     print("Warning: A True value for immediate_processing has no effect when using the PMDE policy.")
+    #     # sys.exit(1)
 
     initial_balance_0 = node_0_parameters[0]
     total_transactions_0 = node_0_parameters[1]
@@ -417,7 +423,7 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, im
 
     env = simpy.Environment()
 
-    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], who_has_buffer, immediate_processing, scheduling_policy, verbose,
+    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], who_has_buffer, scheduling_policy, buffer_discipline, verbose,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
