@@ -1,24 +1,33 @@
 """
 This script uses Discrete Event Simulation via SimPy to simulate a single payment channel.
-It is possible that a buffer exists and accepts transactions that are not executed immediately. There are 5 options:
-    - None of the nodes has a buffer
-    - Only node 0 has a buffer
-    - Only node 1 has a buffer
-    - Each of nodes 0 and 1 has its own buffer
-    - Both nodes have a shared buffer
+
 Transactions are generated from both sides according to customizable distributions of amounts and arrival times.
-A transaction arriving at the channel is processed immediately, if possible.
-Otherwise, if a buffer exists in the corresponding origin node, it is added to the buffer until it processed successfully or its deadline expires.
-The buffer processes the transactions according to the algorithm:
-    1) oldest transaction first
-    2) shortest deadline first
-    3) largest amount first
 
-Max buffering time is defined as a transaction property, not a channel property.
-The buffer is processed every 1 second until the total simulation time has been reached.
+Input parameters:
+    - node_0_parameters:    :   [initial_balance_0, total_transactions_0, exp_mean_0, amount_distribution_0, amount_distribution_parameters_0, deadline_distribution_0]
+    - node_1_parameters     :   [initial_balance_1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_parameters_1, deadline_distribution_1]
+    - scheduling_policy
+    - buffer_discipline
+    - who_has_buffer
+    - max_buffering_time
+    - verbose
+    - seed
 
-To-do (?): Terminate simulation at maximum simulation time, not when a certain number of transactions is generated,
-to avoid rejecting the remaining transactions in the buffers, which could have been successful if more transactions were arriving.
+Output:
+- results = {
+        'success_counts': [success_count_node_0, success_count_node_1, success_count_channel_total],
+        'arrived_counts': [arrived_count_node_0, arrived_count_node_1, arrived_count_channel_total],
+        'throughputs': [throughput_node_0, throughput_node_1, throughput_channel_total],
+        'arrived_amounts': [arrived_amount_node_0, arrived_amount_node_1, arrived_amount_channel_total],
+        'sacrificed_counts': [sacrificed_count_node_0, sacrificed_count_node_1, sacrificed_count_channel_total],
+        'sacrificed_amounts': [sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total],
+        'success_rates': [success_rate_node_0, success_rate_node_1, success_rate_channel_total],
+        'normalized_throughputs': [normalized_throughput_node_0, normalized_throughput_node_1, normalized_throughput_channel_total]
+    }
+- all_transactions_list
+
+Hardcoded parameters: checkInterval
+
 """
 
 
@@ -28,10 +37,6 @@ import sys
 # import powerlaw
 import pandas as pd
 import sortedcontainers as sc
-import csv
-from statsmodels.distributions.empirical_distribution import ECDF
-
-# sc.SortedKeyList.__repr__ = lambda skl: list(skl)
 
 
 class Transaction:
@@ -140,13 +145,9 @@ class Channel:
         t.status = "REJECTED"
 
     def add_transaction_to_buffer(self, t):
-        # self.buffers[t.from_node].transaction_list.append(t)
 
-        # scheduling_policy = self.buffers[t.from_node].scheduling_policy
-        # self.buffers[t.from_node].transaction_list.append(BufferedTransaction(t, scheduling_policy))
         self.buffers[t.from_node].transaction_list.add(t)
 
-        # print(self.buffers[t.from_node].transaction_list)
         t.buffered = True
         if self.verbose:
             print("Time {:.2f}: Transaction {} added to buffer of node {}.".format(self.env.now, t, t.from_node))
@@ -441,19 +442,9 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
 
     env.run()
 
-    # success_rates = [channel.successful_transactions[0] / total_transactions_0,
-    #                  channel.successful_transactions[1] / total_transactions_1,
-    #                  (channel.successful_transactions[0] + channel.successful_transactions[1]) / (
-    #                              total_transactions_0 + total_transactions_1)]
-
     # Calculate results
 
     measurement_interval = [total_simulation_time_estimation*0.1, total_simulation_time_estimation*0.9]
-    # sr_new = 0
-    # for t in all_transactions_list:
-    #     if (t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]):
-    #         if t.status == "SUCCEEDED":
-    #             sr_new += 1
 
     success_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
     success_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
@@ -491,12 +482,9 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
         'normalized_throughputs': [normalized_throughput_node_0, normalized_throughput_node_1, normalized_throughput_channel_total]
     }
 
-    # if verbose:
     print("Total success rate: {:.2f}".format(success_count_channel_total/arrived_count_channel_total))
     print("Total normalized throughput: {:.2f}".format(throughput_channel_total/arrived_amount_channel_total))
     print("Number of sacrificed transactions (node 0, node 1, total): {}, {}, {}".format(sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total))
-        # if channel.buffers[0] is not None: print("Buffer 0:", list(channel.buffers[0].transaction_list))
-        # if channel.buffers[1] is not None: print("Buffer 1:", list(channel.buffers[1].transaction_list))
 
     for t in all_transactions_list:
         del t.env
