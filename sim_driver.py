@@ -19,9 +19,9 @@ def pypet_wrapper(traj):
     # traj.f_add_result('arrived_count_node_0', results['arrived_counts'][0], comment='Number of transactions that arrived (node 0)')
     # traj.f_add_result('arrived_count_node_1', results['arrived_counts'][1], comment='Number of transactions that arrived (node 1)')
     # traj.f_add_result('arrived_count_channel_total', results['arrived_counts'][2], comment='Number of transactions that arrived (channel total)')
-    # traj.f_add_result('throughput_node_0', results['throughputs'][0], comment='Throughput (Amount of successful transactions) (node 0)')
-    # traj.f_add_result('throughput_node_1', results['throughputs'][1], comment='Throughput (Amount of successful transactions) (node 1)')
-    # traj.f_add_result('throughput_channel_total', results['throughputs'][2], comment='Throughput (Amount of successful transactions) (channel total)')
+    traj.f_add_result('success_amount_node_0', results['success_amounts'][0], comment='Throughput (Amount of successful transactions) (node 0)')
+    traj.f_add_result('success_amount_node_1', results['success_amounts'][1], comment='Throughput (Amount of successful transactions) (node 1)')
+    traj.f_add_result('success_amount_channel_total', results['success_amounts'][2], comment='Throughput (Amount of successful transactions) (channel total)')
     # traj.f_add_result('arrived_amount_node_0', results['arrived_amounts'][0], comment='Amount of transactions that arrived (node 0)')
     # traj.f_add_result('arrived_amount_node_1', results['arrived_amounts'][1], comment='Amount of transactions that arrived (node 1)')
     # traj.f_add_result('arrived_amount_channel_total', results['arrived_amounts'][2], comment='Amount of transactions that arrived (channel total)')
@@ -45,7 +45,7 @@ def pypet_wrapper(traj):
 def main():
     # Create the environment
     env = pypet.Environment(trajectory='single_payment_channel_scheduling',
-                            filename='./HDF5/results_102.hdf5',
+                            filename='./HDF5/results_100.hdf5',
                             overwrite_file=True)
     traj = env.traj
     EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
@@ -53,18 +53,18 @@ def main():
     # SIMULATION PARAMETERS
 
     verbose = False
-    num_of_experiments = 10
+    num_of_experiments = 1
 
     # Node 0
     initial_balance_0 = 0
-    total_transactions_0 = 750
-    exp_mean_0 = 1 / 2
-    amount_distribution_0 = "constant"
-    amount_distribution_parameters_0 = [50]                   # value of all transactions
+    total_transactions_0 = 500
+    exp_mean_0 = 1 / 3
+    # amount_distribution_0 = "constant"
+    # amount_distribution_parameters_0 = [50]                   # value of all transactions
     # amount_distribution_0 = "uniform"
     # amount_distribution_parameters_0 = [100]                # max_transaction_amount
-    # amount_distribution_0 = "gaussian"
-    # amount_distribution_parameters_0 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    amount_distribution_0 = "gaussian"
+    amount_distribution_parameters_0 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
     # amount_distribution_0 = "empirical_from_csv_file"
     # amount_distribution_parameters_0 = [EMPIRICAL_DATA_FILEPATH]
     # amount_distribution_0 = "pareto"
@@ -77,19 +77,19 @@ def main():
     initial_balance_1 = 300         # Capacity = 300
     total_transactions_1 = 500
     exp_mean_1 = 1 / 3
-    amount_distribution_1 = "constant"
-    amount_distribution_parameters_1 = [50]                   # value of all transactions
+    # amount_distribution_1 = "constant"
+    # amount_distribution_parameters_1 = [50]                   # value of all transactions
     # amount_distribution_1 = "uniform"
     # amount_distribution_parameters_1 = [100]                # max_transaction_amount
-    # amount_distribution_1 = "gaussian"
-    # amount_distribution_parameters_1 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
+    amount_distribution_1 = "gaussian"
+    amount_distribution_parameters_1 = [300, 100, 50]       # max_transaction_amount, gaussian_mean, gaussian_variance. E.g.: [capacity, capacity / 2, capacity / 6]
     # amount_distribution_1 = "empirical_from_csv_file"
     # amount_distribution_parameters_1 = [EMPIRICAL_DATA_FILEPATH]
     # amount_distribution_1 = "pareto"
     # amount_distribution_parameters_1 = [1, 1.16, 1]                             # lower, shape, size
 
-    # deadline_distribution_1 = "constant"
-    deadline_distribution_1 = "uniform"
+    deadline_distribution_1 = "constant"
+    # deadline_distribution_1 = "uniform"
 
     # Process empirical dataset if requested
 
@@ -141,15 +141,15 @@ def main():
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434, 63664, 25704, 38368, 45271, 34425]
 
     traj.f_explore(pypet.cartesian_product({
-                                            'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
-                                            # 'scheduling_policy': ["PMDE"],
-                                            'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
-                                            # 'buffer_discipline': ["oldest_first"],
+                                            # 'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
+                                            'scheduling_policy': ["PMDE"],
+                                            # 'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
+                                            'buffer_discipline': ["oldest_first"],
                                             # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             # 'who_has_buffer': ["none"],
                                             'who_has_buffer': ["both_shared"],
-                                            # 'max_buffering_time': [60],
-                                            'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
+                                            'max_buffering_time': [10],
+                                            # 'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
 
     # Run wrapping function instead of simulator directly
