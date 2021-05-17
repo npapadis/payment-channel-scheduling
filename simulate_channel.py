@@ -17,7 +17,7 @@ Output:
 - results = {
         'success_counts': [success_count_node_0, success_count_node_1, success_count_channel_total],
         'arrived_counts': [arrived_count_node_0, arrived_count_node_1, arrived_count_channel_total],
-        'throughputs': [throughput_node_0, throughput_node_1, throughput_channel_total],
+        'success_amounts': [success_amount_node_0, success_amount_node_1, success_amount_channel_total],
         'arrived_amounts': [arrived_amount_node_0, arrived_amount_node_1, arrived_amount_channel_total],
         'sacrificed_counts': [sacrificed_count_node_0, sacrificed_count_node_1, sacrificed_count_channel_total],
         'sacrificed_amounts': [sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total],
@@ -452,9 +452,9 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
     arrived_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
     arrived_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
     arrived_count_channel_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
-    throughput_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
-    throughput_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
-    throughput_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
+    success_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
+    success_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
+    success_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
     arrived_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
     arrived_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
     arrived_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
@@ -467,14 +467,14 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
     success_rate_node_0 = success_count_node_0/arrived_count_node_0
     success_rate_node_1 = success_count_node_1/arrived_count_node_1
     success_rate_channel_total = success_count_channel_total / arrived_count_channel_total
-    normalized_throughput_node_0 = throughput_node_0/arrived_amount_node_0
-    normalized_throughput_node_1 = throughput_node_1/arrived_amount_node_1
-    normalized_throughput_channel_total = throughput_channel_total/arrived_amount_channel_total
+    normalized_throughput_node_0 = success_amount_node_0/arrived_amount_node_0      # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
+    normalized_throughput_node_1 = success_amount_node_1/arrived_amount_node_1      # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
+    normalized_throughput_channel_total = success_amount_channel_total/arrived_amount_channel_total     # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
 
     results = {
         'success_counts': [success_count_node_0, success_count_node_1, success_count_channel_total],
         'arrived_counts': [arrived_count_node_0, arrived_count_node_1, arrived_count_channel_total],
-        'throughputs': [throughput_node_0, throughput_node_1, throughput_channel_total],
+        'success_amounts': [success_amount_node_0, success_amount_node_1, success_amount_channel_total],
         'arrived_amounts': [arrived_amount_node_0, arrived_amount_node_1, arrived_amount_channel_total],
         'sacrificed_counts': [sacrificed_count_node_0, sacrificed_count_node_1, sacrificed_count_channel_total],
         'sacrificed_amounts': [sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total],
@@ -483,8 +483,8 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
     }
 
     print("Total success rate: {:.2f}".format(success_count_channel_total/arrived_count_channel_total))
-    print("Total normalized throughput: {:.2f}".format(throughput_channel_total/arrived_amount_channel_total))
-    print("Number of sacrificed transactions (node 0, node 1, total): {}, {}, {}".format(sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total))
+    print("Total normalized throughput: {:.2f}".format(success_amount_channel_total/arrived_amount_channel_total))
+    print("Number of sacrificed transactions (node 0, node 1, total): {}, {}, {}".format(sacrificed_count_node_0, sacrificed_count_node_1, sacrificed_count_channel_total))
 
     for t in all_transactions_list:
         del t.env
