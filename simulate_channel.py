@@ -8,7 +8,7 @@ Input parameters:
     - node_1_parameters     :   [initial_balance_1, total_transactions_1, exp_mean_1, amount_distribution_1, amount_distribution_parameters_1, deadline_distribution_1]
     - scheduling_policy
     - buffer_discipline
-    - who_has_buffer
+    - buffering_capability
     - max_buffering_time
     - verbose
     - seed
@@ -74,7 +74,7 @@ class Transaction:
 
 class Channel:
 
-    def __init__(self, env, node0, node1, balances, who_has_buffer, scheduling_policy, buffer_discipline, verbose,
+    def __init__(self, env, node0, node1, balances, buffering_capability, scheduling_policy, buffer_discipline, verbose,
                  total_simulation_time_estimation):
         self.env = env
         self.node0 = node0
@@ -91,25 +91,25 @@ class Channel:
         self.balance_history_node_0_times = []
         self.balance_history_node_0_values = []
 
-        if who_has_buffer == "none":
+        if buffering_capability == "neither_node":
             self.buffers = [None, None]
-        elif who_has_buffer == "only_node_0":
+        elif buffering_capability == "only_node_0":
             self.buffers = [Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation), None]
             self.env.process(self.buffers[0].run())
-        elif who_has_buffer == "only_node_1":
+        elif buffering_capability == "only_node_1":
             self.buffers = [None, Buffer(env, node1, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_separate") or (who_has_buffer == "both_shared" and self.scheduling_policy == "PMDE"):
+        elif (buffering_capability == "both_separate") or (buffering_capability == "both_shared" and self.scheduling_policy == "PMDE"):
             self.buffers = [Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation),
                             Buffer(env, node1, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)]
             self.env.process(self.buffers[0].run())
             self.env.process(self.buffers[1].run())
-        elif (who_has_buffer == "both_shared") and (self.scheduling_policy != "PMDE"):
+        elif (buffering_capability == "both_shared") and (self.scheduling_policy != "PMDE"):
             shared_buffer = Buffer(env, node0, self, self.scheduling_policy, self.buffer_discipline, verbose, total_simulation_time_estimation)
             self.buffers = [shared_buffer, shared_buffer]
             self.env.process(self.buffers[0].run())
         else:
-            print("Input error: {} is not a valid 'who_has_buffer' value.".format(who_has_buffer))
+            print("Input error: {} is not a valid 'buffering_capability' value.".format(buffering_capability))
             sys.exit(1)
 
     def execute_feasible_transaction(self, t):
@@ -405,7 +405,7 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
         yield env.timeout(time_to_next_arrival)
 
 
-def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, verbose, seed):
+def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, verbose, seed):
 
     initial_balance_0 = node_0_parameters[0]
     total_transactions_0 = node_0_parameters[1]
@@ -431,7 +431,7 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
 
     env = simpy.Environment()
 
-    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], who_has_buffer, scheduling_policy, buffer_discipline, verbose,
+    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], buffering_capability, scheduling_policy, buffer_discipline, verbose,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
