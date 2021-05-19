@@ -1,5 +1,5 @@
 import csv
-from math import floor
+from math import ceil, floor
 from pypet import load_trajectory, pypetconstants, utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -94,8 +94,8 @@ traj = load_trajectory(filename='./HDF5/' + filename + '.hdf5', name='single_pay
 
 # Parse parameter values
 
-par_who_has_buffer_values = traj.f_get('who_has_buffer').f_get_range()
-par_who_has_buffer_values = list(dict.fromkeys(par_who_has_buffer_values))
+par_buffering_capability_values = traj.f_get('buffering_capability').f_get_range()
+par_buffering_capability_values = list(dict.fromkeys(par_buffering_capability_values))
 par_buffer_discipline_values = traj.f_get('buffer_discipline').f_get_range()
 par_buffer_discipline_values = list(dict.fromkeys(par_buffer_discipline_values))
 par_scheduling_policy_values = traj.f_get('scheduling_policy').f_get_range()
@@ -110,49 +110,51 @@ par_seed_values = list(dict.fromkeys(par_seed_values))
 # Parse results
 
 # success_rate_node_0_values = list(traj.f_get_from_runs('success_rate_node_0', fast_access=True).values())
-# success_rate_node_0_values = np.reshape(np.array(success_rate_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_rate_node_0_values = np.reshape(np.array(success_rate_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_rate_node_0_values_average = success_rate_node_0_values.mean(axis=4)
 # success_rate_node_1_values = list(traj.f_get_from_runs('success_rate_node_1', fast_access=True).values())
-# success_rate_node_1_values = np.reshape(np.array(success_rate_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_rate_node_1_values = np.reshape(np.array(success_rate_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_rate_node_1_values_average = success_rate_node_1_values.mean(axis=4)
 # success_rate_channel_total_values = list(traj.f_get_from_runs('success_rate_channel_total', fast_access=True).values())
-# success_rate_channel_total_values = np.reshape(np.array(success_rate_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_rate_channel_total_values = np.reshape(np.array(success_rate_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_rate_channel_total_values_average = success_rate_channel_total_values.mean(axis=4)
+# success_rate_channel_total_values_max = success_rate_channel_total_values.max(axis=4)
+# success_rate_channel_total_values_min = success_rate_channel_total_values.min(axis=4)
 #
 # success_amount_node_0_values = list(traj.f_get_from_runs('success_amount_node_0', fast_access=True).values())
-# success_amount_node_0_values = np.reshape(np.array(success_amount_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_amount_node_0_values = np.reshape(np.array(success_amount_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_amount_node_0_values_average = success_amount_node_0_values.mean(axis=4)
 # success_amount_node_1_values = list(traj.f_get_from_runs('success_amount_node_1', fast_access=True).values())
-# success_amount_node_1_values = np.reshape(np.array(success_amount_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_amount_node_1_values = np.reshape(np.array(success_amount_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_amount_node_1_values_average = success_amount_node_1_values.mean(axis=4)
 # success_amount_channel_total_values = list(traj.f_get_from_runs('success_amount_channel_total', fast_access=True).values())
-# success_amount_channel_total_values = np.reshape(np.array(success_amount_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# success_amount_channel_total_values = np.reshape(np.array(success_amount_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # success_amount_channel_total_values_average = success_amount_channel_total_values.mean(axis=4)
 #
 # normalized_throughput_node_0_values = list(traj.f_get_from_runs('normalized_throughput_node_0', fast_access=True).values())
-# normalized_throughput_node_0_values = np.reshape(np.array(normalized_throughput_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# normalized_throughput_node_0_values = np.reshape(np.array(normalized_throughput_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # normalized_throughput_node_0_values_average = normalized_throughput_node_0_values.mean(axis=4)
 # normalized_throughput_node_0_values_max = normalized_throughput_node_0_values.max(axis=4)
 # normalized_throughput_node_0_values_min = normalized_throughput_node_0_values.min(axis=4)
 # normalized_throughput_node_1_values = list(traj.f_get_from_runs('normalized_throughput_node_1', fast_access=True).values())
-# normalized_throughput_node_1_values = np.reshape(np.array(normalized_throughput_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# normalized_throughput_node_1_values = np.reshape(np.array(normalized_throughput_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # normalized_throughput_node_1_values_average = normalized_throughput_node_1_values.mean(axis=4)
 # normalized_throughput_node_1_values_max = normalized_throughput_node_1_values.max(axis=4)
 # normalized_throughput_node_1_values_min = normalized_throughput_node_1_values.min(axis=4)
 # normalized_throughput_channel_total_values = list(traj.f_get_from_runs('normalized_throughput_channel_total', fast_access=True).values())
-# normalized_throughput_channel_total_values = np.reshape(np.array(normalized_throughput_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# normalized_throughput_channel_total_values = np.reshape(np.array(normalized_throughput_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # normalized_throughput_channel_total_values_average = normalized_throughput_channel_total_values.mean(axis=4)
 # normalized_throughput_channel_total_values_max = normalized_throughput_channel_total_values.max(axis=4)
 # normalized_throughput_channel_total_values_min = normalized_throughput_channel_total_values.min(axis=4)
 #
 # sacrificed_count_node_0_values = list(traj.f_get_from_runs('sacrificed_count_node_0', fast_access=True).values())
-# sacrificed_count_node_0_values = np.reshape(np.array(sacrificed_count_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# sacrificed_count_node_0_values = np.reshape(np.array(sacrificed_count_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_node_0_values_average = sacrificed_count_node_0_values.mean(axis=4)
 # sacrificed_count_node_1_values = list(traj.f_get_from_runs('sacrificed_count_node_1', fast_access=True).values())
-# sacrificed_count_node_1_values = np.reshape(np.array(sacrificed_count_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# sacrificed_count_node_1_values = np.reshape(np.array(sacrificed_count_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_node_1_values_average = sacrificed_count_node_1_values.mean(axis=4)
 # sacrificed_count_channel_total_values = list(traj.f_get_from_runs('sacrificed_count_channel_total', fast_access=True).values())
-# sacrificed_count_channel_total_values = np.reshape(np.array(sacrificed_count_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_who_has_buffer_values), len(par_max_buffering_time_values), len(par_seed_values)))
+# sacrificed_count_channel_total_values = np.reshape(np.array(sacrificed_count_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_channel_total_values_average = sacrificed_count_channel_total_values.mean(axis=4)
 
 
@@ -170,7 +172,7 @@ markers = [".", "x", "s", "+", "*", "d"]
 #
 #
 # # Success_rate/throughput/sacrificed vs max buffering time for all scheduling policies
-# for who_has_buffer_index, who_has_buffer in enumerate(par_who_has_buffer_values):
+# for buffering_capability_index, buffering_capability in enumerate(par_buffering_capability_values):
 #     for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_discipline_values):
 #         fig, ax1 = plt.subplots()
 #         # ax1.set_prop_cycle(color=['red', 'green', 'blue', 'orange', 'magenta'])
@@ -180,29 +182,29 @@ markers = [".", "x", "s", "+", "*", "d"]
 #         for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
 #             innermost_index = scheduling_policy_index
 #             color = colors[innermost_index]
-#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Success rate of node 0, Scheduling policy: "+scheduling_policy, linestyle='solid')
-#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Success rate of node 1, Scheduling policy: "+scheduling_policy, linestyle='solid')
-#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Success rate total, Scheduling policy: "+scheduling_policy, linestyle=linestyles[0], color=color, alpha=1)
-#             # ax2.plot(par_max_buffering_time_values, success_amount_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Throughput of node 0, Scheduling policy: "+scheduling_policy, linestyle='dashed')
-#             # ax2.plot(par_max_buffering_time_values, success_amount_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Throughput of node 1, Scheduling policy: "+scheduling_policy, linestyle='dashed')
-#             # ax2.plot(par_max_buffering_time_values, success_amount_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Total successful amount, Scheduling policy: "+scheduling_policy, linestyle=linestyles[1], color=color, alpha=1)
+#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 0, Scheduling policy: "+scheduling_policy, linestyle='solid')
+#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 1, Scheduling policy: "+scheduling_policy, linestyle='solid')
+#             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate total, Scheduling policy: "+scheduling_policy, linestyle=linestyles[0], color=color, alpha=1)
+#             # ax2.plot(par_max_buffering_time_values, success_amount_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Throughput of node 0, Scheduling policy: "+scheduling_policy, linestyle='dashed')
+#             # ax2.plot(par_max_buffering_time_values, success_amount_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Throughput of node 1, Scheduling policy: "+scheduling_policy, linestyle='dashed')
+#             # ax2.plot(par_max_buffering_time_values, success_amount_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Total successful amount, Scheduling policy: "+scheduling_policy, linestyle=linestyles[1], color=color, alpha=1)
 #
-#             # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
-#             # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
-#             # yerr_0 = [100*(normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_node_0_values_min[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :]), 100*(normalized_throughput_node_0_values_max[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :])]
-#             # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], yerr=yerr_0, fmt='--')
-#             # yerr_1 = [100*(normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_node_1_values_min[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :]), 100*(normalized_throughput_node_1_values_max[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :])]
-#             # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], yerr=yerr_1, fmt='--')
+#             # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
+#             # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
+#             # yerr_0 = [100*(normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_0_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
+#             # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_0, fmt='--')
+#             # yerr_1 = [100*(normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_1_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
+#             # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_1, fmt='--')
 #
-#             ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label=scheduling_policy, linestyle=linestyles[0], marker=markers[innermost_index], color=color, alpha=1)
-#             yerr_total = [100*(normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :]), 100*(normalized_throughput_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] - normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :])]
-#             ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], yerr=yerr_total, fmt='--')
+#             ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy, linestyle=linestyles[0], marker=markers[innermost_index], color=color, alpha=1)
+#             yerr_total = [100*(normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
+#             ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_total, fmt='--')
 #
-#             # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
-#             # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
+#             # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
+#             # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
 #
 #
-#             # ax3.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :] + sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Number of sacrificed transactions, Scheduling policy: "+scheduling_policy, linestyle=linestyles[3], color=color, alpha=1)
+#             # ax3.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] + sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Number of sacrificed transactions, Scheduling policy: "+scheduling_policy, linestyle=linestyles[3], color=color, alpha=1)
 #
 #         ax1.grid(True)
 #         ax1.set_ylim(bottom=0, top=100)
@@ -265,8 +267,8 @@ markers = [".", "x", "s", "+", "*", "d"]
 #     for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
 #         for max_buffering_time_index, max_buffering_time in enumerate(par_max_buffering_time_values):
 #             fig, ax1 = plt.subplots()
-#             ax1.bar(par_who_has_buffer_values, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], label="Success rate", color=colors[0])
-#             # ax1.bar(par_who_has_buffer_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], label="Normalized throughput", color=colors[1])
+#             ax1.bar(par_buffering_capability_values, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], label="Success rate", color=colors[0])
+#             # ax1.bar(par_buffering_capability_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], label="Normalized throughput", color=colors[1])
 #
 #             ax1.grid(True)
 #             ax1.set_ylim(bottom=0, top=100)
@@ -322,7 +324,7 @@ for index in all_transactions_list_from_runs:
         else:
             success_count_per_amount[amount] = 0
 
-    experiment_anatomy_dict[(traj.f_get('scheduling_policy').f_get(), traj.f_get('buffer_discipline').f_get(), traj.f_get('who_has_buffer').f_get(), traj.f_get('max_buffering_time').f_get(), traj.f_get('seed').f_get())] = [success_count_per_amount, total_per_amount]
+    experiment_anatomy_dict[(traj.f_get('scheduling_policy').f_get(), traj.f_get('buffer_discipline').f_get(), traj.f_get('buffering_capability').f_get(), traj.f_get('max_buffering_time').f_get(), traj.f_get('seed').f_get())] = [success_count_per_amount, total_per_amount]
     # Contains a dictionary with all tx amounts as keys and the number of successful txs of each amount as values, for one group_index and one repetition
 
 
@@ -332,10 +334,10 @@ average_success_rate_of_every_bin_for_all_experiments = {}
 
 for scheduling_policy in par_scheduling_policy_values:
     for buffer_discipline in par_buffer_discipline_values:
-        for who_has_buffer in par_who_has_buffer_values:
+        for buffering_capability in par_buffering_capability_values:
             for max_buffering_time in par_max_buffering_time_values:
                 for seed in par_seed_values:
-                    experiment_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, seed)
+                    experiment_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, seed)
                     success_count_per_amount = experiment_anatomy_dict[experiment_index][0]
                     total_per_amount = experiment_anatomy_dict[experiment_index][1]
 
@@ -366,21 +368,21 @@ for scheduling_policy in par_scheduling_policy_values:
                     success_rate_of_every_bin_for_all_experiments[experiment_index] = success_rate_of_every_bin_for_experiment
 
                 # Average success rate vectors over experiments
-                group_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time)
+                group_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)
                 average_success_rate_of_every_bin_for_all_experiments[group_index] = np.zeros(bin_count)
                 for seed in par_seed_values:
-                    experiment_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, seed)
+                    experiment_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, seed)
                     average_success_rate_of_every_bin_for_all_experiments[group_index] += success_rate_of_every_bin_for_all_experiments[experiment_index]
                 average_success_rate_of_every_bin_for_all_experiments[group_index] /= len(par_seed_values)
 
 
 for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_discipline_values):
     for max_buffering_time_index, max_buffering_time in enumerate(par_max_buffering_time_values):
-        for who_has_buffer_index, who_has_buffer in enumerate(par_who_has_buffer_values):
+        for buffering_capability_index, buffering_capability in enumerate(par_buffering_capability_values):
             fig, ax1 = plt.subplots()
             data_to_plot = []
             for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
-                group_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time)
+                group_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)
                 data_to_plot.append([100*x for x in average_success_rate_of_every_bin_for_all_experiments[group_index]])
 
             # ax1.hist(bin_edges[:bin_count-1], bins=bin_edges, weights=data_to_plot, label=par_scheduling_policy_values, color=colors[0:len(par_scheduling_policy_values)], alpha=1)
@@ -428,7 +430,7 @@ experiment_anatomy_summary_dict = {}
 for scheduling_policy in par_scheduling_policy_values:
     experiment_anatomy_summary_dict[scheduling_policy] = {}
     for buffer_discipline in par_buffer_discipline_values:
-        for who_has_buffer in par_who_has_buffer_values:
+        for buffering_capability in par_buffering_capability_values:
             for max_buffering_time in par_max_buffering_time_values:
 
                 experiment_anatomy_dict = {}
@@ -456,13 +458,13 @@ for scheduling_policy in par_scheduling_policy_values:
                         else:
                             success_count_per_deadline[deadline] = 0
 
-                    experiment_anatomy_dict[(traj.scheduling_policy, traj.buffer_discipline, traj.who_has_buffer, traj.max_buffering_time, traj.seed)] = success_count_per_deadline
+                    experiment_anatomy_dict[(traj.scheduling_policy, traj.buffer_discipline, traj.buffering_capability, traj.max_buffering_time, traj.seed)] = success_count_per_deadline
 
 
-                group_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time)
+                group_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)
                 experiment_anatomy_summary_dict[scheduling_policy][group_index] = {}
                 for seed in par_seed_values:
-                    experiment_index = (scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time, seed)
+                    experiment_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, seed)
                     for deadline in experiment_anatomy_dict[experiment_index].keys():
                         if deadline in experiment_anatomy_summary_dict[scheduling_policy][group_index].keys():
                             experiment_anatomy_summary_dict[scheduling_policy][group_index][deadline] += experiment_anatomy_dict[experiment_index][deadline]
@@ -478,7 +480,7 @@ bin_count = 10
 
 for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_discipline_values):
     for max_buffering_time_index, max_buffering_time in enumerate(par_max_buffering_time_values[::mbt_step]):
-        for who_has_buffer_index, who_has_buffer in enumerate(par_who_has_buffer_values):
+        for buffering_capability_index, buffering_capability in enumerate(par_buffering_capability_values):
             fig, ax1 = plt.subplots()
             all_deadlines_to_process = []
             all_weights = []
@@ -486,8 +488,8 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
                 innermost_index = scheduling_policy_index
                 color = colors[innermost_index]
 
-                deadlines_to_process = list(experiment_anatomy_summary_dict[scheduling_policy][(scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time)].keys())
-                success_counts_to_process = list(experiment_anatomy_summary_dict[scheduling_policy][(scheduling_policy, buffer_discipline, who_has_buffer, max_buffering_time)].values())
+                deadlines_to_process = list(experiment_anatomy_summary_dict[scheduling_policy][(scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)].keys())
+                success_counts_to_process = list(experiment_anatomy_summary_dict[scheduling_policy][(scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)].values())
                 # bin_width = max(np.floor(max(amounts_to_process)) // bin_count)
                 # amounts_to_plot, bin_edges = np.histogram(amounts_to_process, bins=bin_count, weights=success_counts_to_process)
                 elements_per_bin, bin_edges = np.histogram(deadlines_to_process, bins=bin_count)
@@ -510,14 +512,14 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
                 all_deadlines_to_process.append(deadlines_to_process)
                 all_weights.append(weights)
 
-                # ax1.hist(amounts_to_process, weights=weights, bins=bin_count, label="Success rate, Who has buffer: "+who_has_buffer, color=color)
-                # plt.hist(amounts_to_process, weights=weights, bins=bin_count, label="Success rate, Who has buffer: "+who_has_buffer, color=color)
+                # ax1.hist(amounts_to_process, weights=weights, bins=bin_count, label="Success rate, Who has buffer: "+buffering_capability, color=color)
+                # plt.hist(amounts_to_process, weights=weights, bins=bin_count, label="Success rate, Who has buffer: "+buffering_capability, color=color)
 
-                # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_0_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Success rate of node 0, Buffers: "+who_has_buffer, linestyle='solid')
-                # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_1_values_average[scheduling_policy_index, buffer_discipline_index, who_has_buffer_index, :], label="Success rate of node 1, Buffers: "+who_has_buffer, linestyle='solid')
-                # ax1.plot(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+who_has_buffer, linestyle=linestyles[0], color=color)
-                # ax1.bar(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+who_has_buffer, linestyle=linestyles[0], color=color)
-                # ax1.scatter(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+who_has_buffer, marker=markers[innermost_index], color=color)
+                # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 0, Buffers: "+buffering_capability, linestyle='solid')
+                # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 1, Buffers: "+buffering_capability, linestyle='solid')
+                # ax1.plot(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+buffering_capability, linestyle=linestyles[0], color=color)
+                # ax1.bar(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+buffering_capability, linestyle=linestyles[0], color=color)
+                # ax1.scatter(amounts_to_plot, [100 * elem for elem in success_rates_to_plot], label="Success rate, Who has buffer: "+buffering_capability, marker=markers[innermost_index], color=color)
 
             ax1.hist(all_deadlines_to_process, weights=all_weights, bins=bin_count, label=par_scheduling_policy_values, color=colors[0:len(par_scheduling_policy_values)], alpha=1)
 

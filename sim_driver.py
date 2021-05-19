@@ -10,7 +10,7 @@ def pypet_wrapper(traj):
 
     results, all_transactions_list = simulate_channel(node_0_parameters, node_1_parameters,
                                                          traj.scheduling_policy, traj.buffer_discipline,
-                                                         traj.who_has_buffer, traj.max_buffering_time,
+                                                         traj.buffering_capability, traj.max_buffering_time,
                                                          traj.verbose, traj.seed)
 
     # traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
@@ -19,9 +19,9 @@ def pypet_wrapper(traj):
     # traj.f_add_result('arrived_count_node_0', results['arrived_counts'][0], comment='Number of transactions that arrived (node 0)')
     # traj.f_add_result('arrived_count_node_1', results['arrived_counts'][1], comment='Number of transactions that arrived (node 1)')
     # traj.f_add_result('arrived_count_channel_total', results['arrived_counts'][2], comment='Number of transactions that arrived (channel total)')
-    traj.f_add_result('success_amount_node_0', results['success_amounts'][0], comment='Throughput (Amount of successful transactions) (node 0)')
-    traj.f_add_result('success_amount_node_1', results['success_amounts'][1], comment='Throughput (Amount of successful transactions) (node 1)')
-    traj.f_add_result('success_amount_channel_total', results['success_amounts'][2], comment='Throughput (Amount of successful transactions) (channel total)')
+    # traj.f_add_result('success_amount_node_0', results['success_amounts'][0], comment='Throughput (Amount of successful transactions) (node 0)')
+    # traj.f_add_result('success_amount_node_1', results['success_amounts'][1], comment='Throughput (Amount of successful transactions) (node 1)')
+    # traj.f_add_result('success_amount_channel_total', results['success_amounts'][2], comment='Throughput (Amount of successful transactions) (channel total)')
     # traj.f_add_result('arrived_amount_node_0', results['arrived_amounts'][0], comment='Amount of transactions that arrived (node 0)')
     # traj.f_add_result('arrived_amount_node_1', results['arrived_amounts'][1], comment='Amount of transactions that arrived (node 1)')
     # traj.f_add_result('arrived_amount_channel_total', results['arrived_amounts'][2], comment='Amount of transactions that arrived (channel total)')
@@ -31,11 +31,11 @@ def pypet_wrapper(traj):
     # traj.f_add_result('sacrificed_amount_node_0', results['sacrificed_amounts'][0], comment='Amount of sacrificed transactions (node 0)')
     # traj.f_add_result('sacrificed_amount_node_1', results['sacrificed_amounts'][1], comment='Amount of sacrificed transactions (node 1)')
     # traj.f_add_result('sacrificed_amount_channel_total', results['sacrificed_amounts'][2], comment='Amount of sacrificed transactions (channel total)')
-    traj.f_add_result('success_rate_node_0', results['success_rates'][0], comment='Success rate (node 0)')
-    traj.f_add_result('success_rate_node_1', results['success_rates'][1], comment='Success rate (node 1)')
+    # traj.f_add_result('success_rate_node_0', results['success_rates'][0], comment='Success rate (node 0)')
+    # traj.f_add_result('success_rate_node_1', results['success_rates'][1], comment='Success rate (node 1)')
     traj.f_add_result('success_rate_channel_total', results['success_rates'][2], comment='Success rate (channel total)')
-    traj.f_add_result('normalized_throughput_node_0', results['normalized_throughputs'][0], comment='Normalized throughput (node 0)')
-    traj.f_add_result('normalized_throughput_node_1', results['normalized_throughputs'][1], comment='Normalized throughput (node 1)')
+    # traj.f_add_result('normalized_throughput_node_0', results['normalized_throughputs'][0], comment='Normalized throughput (node 0)')
+    # traj.f_add_result('normalized_throughput_node_1', results['normalized_throughputs'][1], comment='Normalized throughput (node 1)')
     traj.f_add_result('normalized_throughput_channel_total', results['normalized_throughputs'][2], comment='Normalized throughput (channel total)')
 
     # traj.f_add_result('all_transactions_list', all_transactions_list, 'All transactions')
@@ -45,7 +45,7 @@ def pypet_wrapper(traj):
 def main():
     # Create the environment
     env = pypet.Environment(trajectory='single_payment_channel_scheduling',
-                            filename='./HDF5/results_100.hdf5',
+                            filename='./HDF5/results_106.hdf5',
                             overwrite_file=True)
     traj = env.traj
     EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
@@ -53,7 +53,7 @@ def main():
     # SIMULATION PARAMETERS
 
     verbose = False
-    num_of_experiments = 1
+    num_of_experiments = 10
 
     # Node 0
     initial_balance_0 = 0
@@ -88,8 +88,8 @@ def main():
     # amount_distribution_1 = "pareto"
     # amount_distribution_parameters_1 = [1, 1.16, 1]                             # lower, shape, size
 
-    deadline_distribution_1 = "constant"
-    # deadline_distribution_1 = "uniform"
+    # deadline_distribution_1 = "constant"
+    deadline_distribution_1 = "uniform"
 
     # Process empirical dataset if requested
 
@@ -131,9 +131,10 @@ def main():
 
     traj.f_add_parameter('scheduling_policy', "PMDE", comment='Scheduling policy')
     traj.f_add_parameter('buffer_discipline', "oldest_first", comment='Order of processing transactions in the buffer')
-    traj.f_add_parameter('who_has_buffer', "none", comment='Which node has a buffer')
+    traj.f_add_parameter('buffering_capability', "neither_node", comment='Which node has a buffer')
     traj.f_add_parameter('max_buffering_time', 0, comment='Maximum time before a transaction expires')
 
+    traj.f_add_parameter('capacity', capacity, comment='Channel capacity')
     traj.f_add_parameter('verbose', verbose, comment='Verbose output')
     traj.f_add_parameter('num_of_experiments', num_of_experiments, comment='Repetitions of every experiment')
     traj.f_add_parameter('seed', 0, comment='Randomness seed')
@@ -141,14 +142,14 @@ def main():
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434, 63664, 25704, 38368, 45271, 34425]
 
     traj.f_explore(pypet.cartesian_product({
-                                            # 'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
-                                            'scheduling_policy': ["PMDE"],
+                                            'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
+                                            # 'scheduling_policy': ["PMDE"],
                                             # 'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
                                             'buffer_discipline': ["oldest_first"],
-                                            # 'who_has_buffer': ["none", "only_node_0", "only_node_1", "both_separate", "both_shared"],
-                                            # 'who_has_buffer': ["none"],
-                                            'who_has_buffer': ["both_shared"],
-                                            'max_buffering_time': [10],
+                                            'buffering_capability': ["neither_node", "only_node_0", "only_node_1", "both_separate", "both_shared"],
+                                            # 'buffering_capability': ["neither_node"],
+                                            # 'buffering_capability': ["both_shared"],
+                                            'max_buffering_time': [5],
                                             # 'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
                                             'seed': seeds[1:traj.num_of_experiments + 1]}))
 
