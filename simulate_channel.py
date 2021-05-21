@@ -37,13 +37,14 @@ import sys
 # import powerlaw
 import pandas as pd
 import sortedcontainers as sc
+from fractions import Fraction
 
 
 class Transaction:
-    def __init__(self, env, channel, time, from_node, to_node, amount, max_buffering_time, verbose):
+    def __init__(self, env, channel, time_of_arrival, from_node, to_node, amount, max_buffering_time, verbose):
         self.env = env
         self.channel = channel
-        self.time = time
+        self.time_of_arrival = time_of_arrival
         self.from_node = from_node
         self.to_node = to_node
         self.amount = amount
@@ -54,6 +55,7 @@ class Transaction:
         # self.initially_feasible = None
         self.request = None
         self.preemptied = self.env.event()
+        self.time_of_departure = - 1.0  # initialization meaning transaction has not departed the channel yet
 
         if self.verbose:
             print("Time {:.2f}: Transaction {} generated.".format(self.env.now, self))
@@ -69,13 +71,13 @@ class Transaction:
                 yield self.env.process(self.channel.process_transaction(self))              # Once the channel belongs to the transaction, try to process it.
 
     def __repr__(self):
-        return "%d->%d t=%.2f D=%.2f a=%d" % (self.from_node, self.to_node, self.time, self.max_buffering_time, self.amount)
+        return "%d->%d t=%.2f D=%.2f a=%d" % (self.from_node, self.to_node, self.time_of_arrival, self.max_buffering_time, self.amount)
 
 
 class Channel:
 
-    def __init__(self, env, node0, node1, balances, buffering_capability, scheduling_policy, buffer_discipline, verbose,
-                 total_simulation_time_estimation):
+    def __init__(self, env, node0, node1, balances, buffering_capability, scheduling_policy, buffer_discipline, deadline_fraction,
+                 verbose, total_simulation_time_estimation):
         self.env = env
         self.node0 = node0
         self.node1 = node1
@@ -83,6 +85,7 @@ class Channel:
         self.balances = balances
         self.scheduling_policy = scheduling_policy
         self.buffer_discipline = buffer_discipline
+        self.deadline_fraction = deadline_fraction
         self.immediate_processing = True if (scheduling_policy == "PRI-IP") else False
         self.verbose = verbose
         self.channel_link = simpy.Resource(env, capacity=1)
@@ -132,6 +135,7 @@ class Channel:
             print("Time {:.2f}: New balances are {}.".format(self.env.now, self.balances))
 
         t.status = "SUCCEEDED"
+        t.time_of_departure = self.env.now
 
     def reject_transaction(self, t):
         FT = t.buffered is False  # First Time
@@ -143,6 +147,7 @@ class Channel:
             else:
                 print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t))
         t.status = "REJECTED"
+        t.time_of_departure = self.env.now
 
     def add_transaction_to_buffer(self, t):
 
@@ -178,9 +183,9 @@ class Channel:
                 self.execute_feasible_transaction(t)
             elif BE:
                 self.add_transaction_to_buffer(t)
-                deadline = t.time + t.max_buffering_time - self.env.now
+                deadline = t.time_of_arrival + t.max_buffering_time - self.env.now
                 self.channel_link.release(t.request)
-                resume_reason = yield self.env.timeout(deadline) | t.preemptied
+                resume_reason = yield self.env.timeout(self.deadline_fraction * deadline) | t.preemptied
                 if t.preemptied in resume_reason:
                     return True
                 else:
@@ -191,7 +196,8 @@ class Channel:
                         else:
                             t.request = request
                             if self.verbose:
-                                print("Time {:.2f}: Deadline of {} is expiring.".format(self.env.now, t))
+                                fraction_string = (str(Fraction(self.deadline_fraction)) + " of deadline") if self.deadline_fraction < 1 else "Deadline"
+                                print("Time {:.2f}: {} of {} is expiring.".format(self.env.now, fraction_string, t))
                             FE_upon_expiration = t.amount <= self.balances[t.from_node]
                             if FE_upon_expiration:
                                 self.buffers[t.from_node].transaction_list.remove(t)
@@ -213,7 +219,7 @@ class Channel:
                                     #     if self.buffers[1] is not None: print("Buffer 1:", list(self.buffers[1].transaction_list))
                                     # return True
 
-                                    # Version 2: policy for unequal amounts
+                                    # Version 2: policy for general (possibly unequal) amounts
                                     needed_difference = t.amount - self.balances[t.from_node]
                                     opposite_buffer_index = 0
                                     total_opposite_amount = 0
@@ -257,7 +263,7 @@ class Channel:
             if (IP and BE and FT and FE) or (IP and BE and not FT and FE) or (IP and not BE and FT and FE) or (
                     not IP and BE and not FT and FE):  # process
                     # Once the channel belongs to the transaction, then if the deadline has not expired, try to process it.
-                    if t.time + t.max_buffering_time >= t.env.now:
+                    if t.time_of_arrival + t.max_buffering_time >= t.env.now:
                         self.execute_feasible_transaction(t)
                         return True
                     else:   # Transaction expired and will be handled in the next processing of the buffer.
@@ -300,11 +306,11 @@ class Buffer:
         self.check_interval = 3
 
         if self.buffer_discipline == "oldest_first":
-            key = lambda t: t.time
+            key = lambda t: t.time_of_arrival
         elif self.buffer_discipline == "youngest_first":
-            key = lambda t: - t.time
+            key = lambda t: - t.time_of_arrival
         elif self.buffer_discipline == "closest_deadline_first":
-            key = lambda t: t.time + t.max_buffering_time
+            key = lambda t: t.time_of_arrival + t.max_buffering_time
         elif self.buffer_discipline == "largest_amount_first":
             key = lambda t: t.amount
         elif self.buffer_discipline == "smallest_amount_first":
@@ -332,8 +338,9 @@ class Buffer:
         total_successes_this_time = 0
 
         for t in self.transaction_list:
-            if t.time + t.max_buffering_time < self.env.now:  # if t is too old, reject it and remove it from buffer
+            if t.time_of_arrival + t.max_buffering_time < self.env.now:  # if t is too old, reject it and remove it from buffer
                 t.status = "EXPIRED"
+                t.time_of_departure = self.env.now
                 self.transaction_list.remove(t)
                 if self.verbose:
                     print("Time {:.2f}: FAILURE: Transaction {} expired and was removed from buffer.".format(self.env.now, t, self.env.now))
@@ -405,7 +412,7 @@ def transaction_generator(env, channel, from_node, total_transactions, exp_mean,
         yield env.timeout(time_to_next_arrival)
 
 
-def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, verbose, seed):
+def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, deadline_fraction, verbose, seed):
 
     initial_balance_0 = node_0_parameters[0]
     total_transactions_0 = node_0_parameters[1]
@@ -431,7 +438,7 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
 
     env = simpy.Environment()
 
-    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], buffering_capability, scheduling_policy, buffer_discipline, verbose,
+    channel = Channel(env, 0, 1, [initial_balance_0, initial_balance_1], buffering_capability, scheduling_policy, buffer_discipline, deadline_fraction, verbose,
                       total_simulation_time_estimation)
 
     all_transactions_list = []
@@ -446,24 +453,24 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
 
     measurement_interval = [total_simulation_time_estimation*0.1, total_simulation_time_estimation*0.9]
 
-    success_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
-    success_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
-    success_count_channel_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
-    arrived_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
-    arrived_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
-    arrived_count_channel_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
-    success_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
-    success_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
-    success_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status == "SUCCEEDED")))
-    arrived_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
-    arrived_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
-    arrived_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.status != "PENDING")))
-    sacrificed_count_node_0 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
-    sacrificed_count_node_1 = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
-    sacrificed_count_channel_total = sum(1 for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
-    sacrificed_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 0) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
-    sacrificed_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.from_node == 1) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
-    sacrificed_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time >= measurement_interval[0]) and (t.time < measurement_interval[1]) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    success_count_node_0 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
+    success_count_node_1 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
+    success_count_channel_total = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status == "SUCCEEDED")))
+    arrived_count_node_0 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
+    arrived_count_node_1 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
+    arrived_count_channel_total = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status != "PENDING")))
+    success_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.status == "SUCCEEDED")))
+    success_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.status == "SUCCEEDED")))
+    success_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status == "SUCCEEDED")))
+    arrived_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.status != "PENDING")))
+    arrived_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.status != "PENDING")))
+    arrived_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status != "PENDING")))
+    sacrificed_count_node_0 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_count_node_1 = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_count_channel_total = sum(1 for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_amount_node_0 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 0) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_amount_node_1 = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.from_node == 1) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
+    sacrificed_amount_channel_total = sum(t.amount for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.initially_feasible is True) and (t.status in ["REJECTED", "EXPIRED"])))
     success_rate_node_0 = success_count_node_0/arrived_count_node_0
     success_rate_node_1 = success_count_node_1/arrived_count_node_1
     success_rate_channel_total = success_count_channel_total / arrived_count_channel_total
