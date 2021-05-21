@@ -11,6 +11,7 @@ def pypet_wrapper(traj):
     results, all_transactions_list = simulate_channel(node_0_parameters, node_1_parameters,
                                                          traj.scheduling_policy, traj.buffer_discipline,
                                                          traj.buffering_capability, traj.max_buffering_time,
+                                                         traj.deadline_fraction,
                                                          traj.verbose, traj.seed)
 
     # traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
@@ -45,15 +46,15 @@ def pypet_wrapper(traj):
 def main():
     # Create the environment
     env = pypet.Environment(trajectory='single_payment_channel_scheduling',
-                            filename='./HDF5/results_106.hdf5',
+                            filename='./HDF5/results_100.hdf5',
                             overwrite_file=True)
     traj = env.traj
     EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
 
     # SIMULATION PARAMETERS
 
-    verbose = False
-    num_of_experiments = 10
+    verbose = True
+    num_of_experiments = 1
 
     # Node 0
     initial_balance_0 = 0
@@ -70,8 +71,8 @@ def main():
     # amount_distribution_0 = "pareto"
     # amount_distribution_parameters_0 = [1, 1.16, 1]         # lower, shape, size
 
-    # deadline_distribution_0 = "constant"
-    deadline_distribution_0 = "uniform"
+    deadline_distribution_0 = "constant"
+    # deadline_distribution_0 = "uniform"
 
     # Node 1
     initial_balance_1 = 300         # Capacity = 300
@@ -88,8 +89,8 @@ def main():
     # amount_distribution_1 = "pareto"
     # amount_distribution_parameters_1 = [1, 1.16, 1]                             # lower, shape, size
 
-    # deadline_distribution_1 = "constant"
-    deadline_distribution_1 = "uniform"
+    deadline_distribution_1 = "constant"
+    # deadline_distribution_1 = "uniform"
 
     # Process empirical dataset if requested
 
@@ -138,20 +139,23 @@ def main():
     traj.f_add_parameter('verbose', verbose, comment='Verbose output')
     traj.f_add_parameter('num_of_experiments', num_of_experiments, comment='Repetitions of every experiment')
     traj.f_add_parameter('seed', 0, comment='Randomness seed')
+    traj.f_add_parameter('deadline_fraction', 1.0, comment='Fraction of deadline at which PMDE will be applied (applicable to PMDE only)')
 
     seeds = [63621, 87563, 24240, 14020, 84331, 60917, 48692, 73114, 90695, 62302, 52578, 43760, 84941, 30804, 40434, 63664, 25704, 38368, 45271, 34425]
 
     traj.f_explore(pypet.cartesian_product({
-                                            'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
-                                            # 'scheduling_policy': ["PMDE"],
+                                            # 'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
+                                            'scheduling_policy': ["PMDE"],
                                             # 'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
                                             'buffer_discipline': ["oldest_first"],
-                                            'buffering_capability': ["neither_node", "only_node_0", "only_node_1", "both_separate", "both_shared"],
+                                            # 'buffering_capability': ["neither_node", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             # 'buffering_capability': ["neither_node"],
-                                            # 'buffering_capability': ["both_shared"],
-                                            'max_buffering_time': [5],
+                                            'buffering_capability': ["both_shared"],
+                                            'max_buffering_time': [60],
                                             # 'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
-                                            'seed': seeds[1:traj.num_of_experiments + 1]}))
+                                            'seed': seeds[1:traj.num_of_experiments + 1],
+                                            'deadline_fraction': [1.0]
+                                            }))
 
     # Run wrapping function instead of simulator directly
     env.run(pypet_wrapper)
