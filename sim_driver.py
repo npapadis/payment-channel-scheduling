@@ -14,6 +14,7 @@ def pypet_wrapper(traj):
                                                          traj.deadline_fraction,
                                                          traj.verbose, traj.seed)
 
+    # traj.f_add_result('measurement_interval_length', results['measurement_interval_length'], comment='Measurement interval length')
     # traj.f_add_result('success_count_node_0', results['success_counts'][0], comment='Number of successful transactions (node 0)')
     # traj.f_add_result('success_count_node_1', results['success_counts'][1], comment='Number of successful transactions (node 1)')
     # traj.f_add_result('success_count_channel_total', results['success_counts'][2], comment='Number of successful transactions (channel total)')
@@ -38,6 +39,9 @@ def pypet_wrapper(traj):
     # traj.f_add_result('normalized_throughput_node_0', results['normalized_throughputs'][0], comment='Normalized throughput (node 0)')
     # traj.f_add_result('normalized_throughput_node_1', results['normalized_throughputs'][1], comment='Normalized throughput (node 1)')
     traj.f_add_result('normalized_throughput_channel_total', results['normalized_throughputs'][2], comment='Normalized throughput (channel total)')
+    traj.f_add_result('total_queueing_time_of_successful_transactions', results['total_queueing_times'][0], comment='Total queueing time of successful transactions')
+    traj.f_add_result('total_queueing_time_of_all_transactions', results['total_queueing_times'][1], comment='Total queueing time of all transactions')
+    traj.f_add_result('average_total_queueing_time_per_unit_amount', results['total_queueing_times'][2], comment='Average queueing delay per successful unit amount')
 
     # traj.f_add_result('all_transactions_list', all_transactions_list, 'All transactions')
 
@@ -46,15 +50,15 @@ def pypet_wrapper(traj):
 def main():
     # Create the environment
     env = pypet.Environment(trajectory='single_payment_channel_scheduling',
-                            filename='./HDF5/results_100.hdf5',
+                            filename='./HDF5/results_131.hdf5',
                             overwrite_file=True)
     traj = env.traj
     EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
 
     # SIMULATION PARAMETERS
 
-    verbose = True
-    num_of_experiments = 1
+    verbose = False
+    num_of_experiments = 10
 
     # Node 0
     initial_balance_0 = 0
@@ -146,15 +150,15 @@ def main():
     traj.f_explore(pypet.cartesian_product({
                                             # 'scheduling_policy': ["PMDE", "PRI-IP", "PRI-NIP"],
                                             'scheduling_policy': ["PMDE"],
-                                            # 'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
-                                            'buffer_discipline': ["oldest_first"],
+                                            'buffer_discipline': ["oldest_first", "youngest_first", "closest_deadline_first", "largest_amount_first", "smallest_amount_first"],
+                                            # 'buffer_discipline': ["oldest_first"],
                                             # 'buffering_capability': ["neither_node", "only_node_0", "only_node_1", "both_separate", "both_shared"],
                                             # 'buffering_capability': ["neither_node"],
                                             'buffering_capability': ["both_shared"],
-                                            'max_buffering_time': [60],
+                                            'max_buffering_time': [10],
                                             # 'max_buffering_time': list(range(1, 10, 1)) + list(range(10, 120, 10)),
                                             'seed': seeds[1:traj.num_of_experiments + 1],
-                                            'deadline_fraction': [1.0]
+                                            'deadline_fraction': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
                                             }))
 
     # Run wrapping function instead of simulator directly
