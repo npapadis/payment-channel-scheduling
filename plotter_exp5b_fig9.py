@@ -74,6 +74,8 @@ for index in all_transactions_list_from_runs:
 experiment_anatomy_in_bins_dict = {}
 success_rate_of_every_bin_for_all_experiments = {}
 average_success_rate_of_every_bin_for_all_experiments = {}
+max_success_rate_of_every_bin_for_all_experiments = {}
+min_success_rate_of_every_bin_for_all_experiments = {}
 
 for scheduling_policy in par_scheduling_policy_values:
     for buffer_discipline in par_buffer_discipline_values:
@@ -112,11 +114,15 @@ for scheduling_policy in par_scheduling_policy_values:
 
                 # Average success rate vectors over experiments
                 group_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)
-                average_success_rate_of_every_bin_for_all_experiments[group_index] = np.zeros(bin_count)
-                for seed in par_seed_values:
-                    experiment_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, seed)
-                    average_success_rate_of_every_bin_for_all_experiments[group_index] += success_rate_of_every_bin_for_all_experiments[experiment_index]
-                average_success_rate_of_every_bin_for_all_experiments[group_index] /= len(par_seed_values)
+                # average_success_rate_of_every_bin_for_all_experiments[group_index] = np.zeros(bin_count)
+                # for seed in par_seed_values:
+                #     experiment_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time, seed)
+                #     average_success_rate_of_every_bin_for_all_experiments[group_index] += success_rate_of_every_bin_for_all_experiments[experiment_index]
+                # average_success_rate_of_every_bin_for_all_experiments[group_index] /= len(par_seed_values)
+
+                average_success_rate_of_every_bin_for_all_experiments[group_index] = np.mean([success_rate_of_every_bin_for_all_experiments[group_index + (seed,)] for seed in par_seed_values], axis=0)
+                max_success_rate_of_every_bin_for_all_experiments[group_index] = np.amax([success_rate_of_every_bin_for_all_experiments[group_index + (seed,)] for seed in par_seed_values], axis=0)
+                min_success_rate_of_every_bin_for_all_experiments[group_index] = np.amin([success_rate_of_every_bin_for_all_experiments[group_index + (seed,)] for seed in par_seed_values], axis=0)
 
 
 for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_discipline_values):
@@ -124,15 +130,17 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
         for buffering_capability_index, buffering_capability in enumerate(par_buffering_capability_values):
             fig, ax1 = plt.subplots()
             data_to_plot = []
+            yerr = []
             for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
                 group_index = (scheduling_policy, buffer_discipline, buffering_capability, max_buffering_time)
                 data_to_plot.append([100*x for x in average_success_rate_of_every_bin_for_all_experiments[group_index]])
+                yerr.append([100*(average_success_rate_of_every_bin_for_all_experiments[group_index] - min_success_rate_of_every_bin_for_all_experiments[group_index]), 100*(max_success_rate_of_every_bin_for_all_experiments[group_index] - average_success_rate_of_every_bin_for_all_experiments[group_index])])
 
             # ax1.hist(bin_edges[:bin_count-1], bins=bin_edges, weights=data_to_plot, label=par_scheduling_policy_values, color=colors[0:len(par_scheduling_policy_values)], alpha=1)
             n = len(par_scheduling_policy_values)
             bar_width = 1/(n+1)
             for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
-                ax1.bar(np.arange(bin_count)-n*bar_width/2+scheduling_policy_index*bar_width, data_to_plot[scheduling_policy_index], label=par_scheduling_policy_values[scheduling_policy_index], color=colors[scheduling_policy_index], alpha=1, width=bar_width)
+                ax1.bar(np.arange(bin_count)-n*bar_width/2+scheduling_policy_index*bar_width, data_to_plot[scheduling_policy_index], yerr=yerr[scheduling_policy_index], label=par_scheduling_policy_values[scheduling_policy_index], color=colors[scheduling_policy_index], alpha=1, width=bar_width)
 
             ax1.set_ylim(bottom=0, top=100)
             ax1.set_xlabel("Transaction amount")
