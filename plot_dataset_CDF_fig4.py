@@ -5,6 +5,8 @@ from math import ceil
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+plt.rcParams.update({'font.size': 15})
+
 save_at_directory = "./figures/"
 Path(save_at_directory).mkdir(parents=True, exist_ok=True)
 filename = 'dataset_cdf'
