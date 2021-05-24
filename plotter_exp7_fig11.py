@@ -36,11 +36,17 @@ normalized_throughput_channel_total_values_average = normalized_throughput_chann
 normalized_throughput_channel_total_values_max = normalized_throughput_channel_total_values.max(axis=1)
 normalized_throughput_channel_total_values_min = normalized_throughput_channel_total_values.min(axis=1)
 
-average_total_queueing_time_per_unit_amount_values = list(traj.f_get_from_runs('average_total_queueing_time_per_unit_amount', fast_access=True).values())
-average_total_queueing_time_per_unit_amount_values = np.reshape(np.array(average_total_queueing_time_per_unit_amount_values), (len(par_buffer_discipline_values), len(par_seed_values), len(par_deadline_fraction_values)))
-average_total_queueing_time_per_unit_amount_values_average = average_total_queueing_time_per_unit_amount_values.mean(axis=1)
-average_total_queueing_time_per_unit_amount_values_max = average_total_queueing_time_per_unit_amount_values.max(axis=1)
-average_total_queueing_time_per_unit_amount_values_min = average_total_queueing_time_per_unit_amount_values.min(axis=1)
+# average_total_queueing_time_per_successful_unit_amount_values = list(traj.f_get_from_runs('average_total_queueing_time_per_successful_unit_amount', fast_access=True).values())
+# average_total_queueing_time_per_successful_unit_amount_values = np.reshape(np.array(average_total_queueing_time_per_successful_unit_amount_values), (len(par_buffer_discipline_values), len(par_seed_values), len(par_deadline_fraction_values)))
+# average_total_queueing_time_per_successful_unit_amount_values_average = average_total_queueing_time_per_successful_unit_amount_values.mean(axis=1)
+# average_total_queueing_time_per_successful_unit_amount_values_max = average_total_queueing_time_per_successful_unit_amount_values.max(axis=1)
+# average_total_queueing_time_per_successful_unit_amount_values_min = average_total_queueing_time_per_successful_unit_amount_values.min(axis=1)
+
+average_total_queueing_time_per_successful_transaction_values = list(traj.f_get_from_runs('average_total_queueing_time_per_successful_transaction', fast_access=True).values())
+average_total_queueing_time_per_successful_transaction_values = np.reshape(np.array(average_total_queueing_time_per_successful_transaction_values), (len(par_buffer_discipline_values), len(par_seed_values), len(par_deadline_fraction_values)))
+average_total_queueing_time_per_successful_transaction_values_average = average_total_queueing_time_per_successful_transaction_values.mean(axis=1)
+average_total_queueing_time_per_successful_transaction_values_max = average_total_queueing_time_per_successful_transaction_values.max(axis=1)
+average_total_queueing_time_per_successful_transaction_values_min = average_total_queueing_time_per_successful_transaction_values.min(axis=1)
 
 
 linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
@@ -68,13 +74,17 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
     # yerr_1 = [100*(normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_1_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
     # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_1, fmt='--')
 
-    ax1.plot(par_deadline_fraction_values, 100 * normalized_throughput_channel_total_values_average[buffer_discipline_index, :], label=buffer_discipline, linestyle=linestyles[0], marker=markers[1], color=colors[buffer_discipline_index], alpha=1)
+    ax1.plot(par_deadline_fraction_values, 100 * normalized_throughput_channel_total_values_average[buffer_discipline_index, :], label=buffer_discipline, linestyle=linestyles[0], marker=markers[buffer_discipline_index], color=colors[buffer_discipline_index], alpha=1)
     yerr_total_1 = [100*(normalized_throughput_channel_total_values_average[buffer_discipline_index, :] - normalized_throughput_channel_total_values_min[buffer_discipline_index, :]), 100*(normalized_throughput_channel_total_values_max[buffer_discipline_index, :] - normalized_throughput_channel_total_values_average[buffer_discipline_index, :])]
     ax1.errorbar(par_deadline_fraction_values, 100 * normalized_throughput_channel_total_values_average[buffer_discipline_index, :], yerr=yerr_total_1, color=colors[0], fmt='none')
 
-    ax2.plot(par_deadline_fraction_values, 100 * average_total_queueing_time_per_unit_amount_values_average[buffer_discipline_index, :], label="Queueing delay: " + buffer_discipline, linestyle=linestyles[1], marker=markers[1], color=colors[buffer_discipline_index], alpha=1)
-    yerr_total_2 = [100*(average_total_queueing_time_per_unit_amount_values_average[buffer_discipline_index, :] - average_total_queueing_time_per_unit_amount_values_min[buffer_discipline_index, :]), 100*(average_total_queueing_time_per_unit_amount_values_max[buffer_discipline_index, :] - average_total_queueing_time_per_unit_amount_values_average[buffer_discipline_index, :])]
-    ax2.errorbar(par_deadline_fraction_values, 100 * average_total_queueing_time_per_unit_amount_values_average[buffer_discipline_index, :], yerr=yerr_total_2, color=colors[1], fmt='none')
+    # ax2.plot(par_deadline_fraction_values, average_total_queueing_time_per_successful_unit_amount_values_average[buffer_discipline_index, :], label="Queueing delay: " + buffer_discipline, linestyle=linestyles[1], marker=markers[buffer_discipline_index], color=colors[buffer_discipline_index], alpha=1)
+    # yerr_total_2 = [average_total_queueing_time_per_successful_unit_amount_values_average[buffer_discipline_index, :] - average_total_queueing_time_per_successful_unit_amount_values_min[buffer_discipline_index, :], average_total_queueing_time_per_successful_unit_amount_values_max[buffer_discipline_index, :] - average_total_queueing_time_per_successful_unit_amount_values_average[buffer_discipline_index, :]]
+    # ax2.errorbar(par_deadline_fraction_values, average_total_queueing_time_per_successful_unit_amount_values_average[buffer_discipline_index, :], yerr=yerr_total_2, color=colors[1], fmt='none')
+
+    ax2.plot(par_deadline_fraction_values, average_total_queueing_time_per_successful_transaction_values_average[buffer_discipline_index, :], label="Queueing delay: " + buffer_discipline, linestyle=linestyles[1], marker=markers[buffer_discipline_index], color=colors[buffer_discipline_index], alpha=1)
+    yerr_total_2 = [average_total_queueing_time_per_successful_transaction_values_average[buffer_discipline_index, :] - average_total_queueing_time_per_successful_transaction_values_min[buffer_discipline_index, :], average_total_queueing_time_per_successful_transaction_values_max[buffer_discipline_index, :] - average_total_queueing_time_per_successful_transaction_values_average[buffer_discipline_index, :]]
+    ax2.errorbar(par_deadline_fraction_values, average_total_queueing_time_per_successful_transaction_values_average[buffer_discipline_index, :], yerr=yerr_total_2, color=colors[1], fmt='none')
 
     # ax1.hlines(45, 0, 1, color=colors[0])
 
@@ -88,7 +98,8 @@ ax1.set_xlabel("Fraction of deadline when PMDE is applied")
 # ax1.set_ylabel("Success rate (%)")
 ax1.set_ylabel("Normalized throughput (%)")
 # ax1.set_ylabel("Number of sacrificed transactions")
-ax2.set_ylabel("Average queueing delay (sec)\n per successful unit amount")
+# ax2.set_ylabel("Average queueing delay (sec)\n per successful unit amount")
+ax2.set_ylabel("Average queueing delay (sec)\n per successful transaction")
 # ax2.tick_params(axis='y', rotation=45)
 # plt.title("")
 
@@ -105,7 +116,7 @@ labels_2 = ["Normalized throughput", "Queueing delay"]
 lines = lines_1 + lines_2
 labels = labels_1 + labels_2
 legend = ax1.legend(lines, labels, loc='best')
-legend_filename = filename + "_legend.png"
+legend_filename = filename + "_legend.pdf"
 save_legend(fig, lines, labels, legend, save_at_directory, legend_filename)
 
 # handles, labels = ax1.get_legend_handles_labels()
@@ -114,5 +125,13 @@ save_legend(fig, lines, labels, legend, save_at_directory, legend_filename)
 # axe.yaxis.set_visible(False)
 # for v in axe.spines.values():
 #     v.set_visible(False)
+
+
+# fig2, ax = plt.subplots()
+# for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_discipline_values):
+#     ax.plot(average_total_queueing_time_per_successful_transaction_values_average[buffer_discipline_index, :], 100 * normalized_throughput_channel_total_values_average[buffer_discipline_index, :], label=buffer_discipline, linestyle=linestyles[0], marker=markers[buffer_discipline_index], color=colors[buffer_discipline_index], alpha=1)
+#     # yerr_total_1 = [100*(normalized_throughput_channel_total_values_average[buffer_discipline_index, :] - normalized_throughput_channel_total_values_min[buffer_discipline_index, :]), 100*(normalized_throughput_channel_total_values_max[buffer_discipline_index, :] - normalized_throughput_channel_total_values_average[buffer_discipline_index, :])]
+#     # ax1.errorbar(par_deadline_fraction_values, 100 * normalized_throughput_channel_total_values_average[buffer_discipline_index, :], yerr=yerr_total_1, color=colors[0], fmt='none')
+
 
 plt.show()

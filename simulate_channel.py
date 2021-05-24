@@ -24,7 +24,7 @@ Output:
         'sacrificed_amounts': [sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total],
         'success_rates': [success_rate_node_0, success_rate_node_1, success_rate_channel_total],
         'normalized_throughputs': [normalized_throughput_node_0, normalized_throughput_node_1, normalized_throughput_channel_total],
-        'total_queueing_times': [total_queueing_time_of_successful_transactions, total_queueing_time_of_all_transactions, average_total_queueing_time_per_unit_amount]
+        'total_queueing_times': [total_queueing_time_of_successful_transactions, total_queueing_time_of_all_transactions, average_total_queueing_time_per_successful_unit_amount, average_total_queueing_time_per_successful_transaction]
     }
 - all_transactions_list
 
@@ -40,6 +40,7 @@ import sys
 import pandas as pd
 import sortedcontainers as sc
 from fractions import Fraction
+from math import inf
 
 
 class Transaction:
@@ -180,7 +181,13 @@ class Channel:
         else:
             t.initially_feasible = False
 
-        if self.scheduling_policy == "PMDE":
+        if self.scheduling_policy == "PFI":
+            if FE:
+                self.execute_feasible_transaction(t)
+            else:
+                self.reject_transaction(t)
+
+        elif self.scheduling_policy == "PMDE":
             if not BE and FE:   # process
                 self.execute_feasible_transaction(t)
             elif BE:
@@ -476,12 +483,13 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
     success_rate_node_0 = success_count_node_0/arrived_count_node_0
     success_rate_node_1 = success_count_node_1/arrived_count_node_1
     success_rate_channel_total = success_count_channel_total / arrived_count_channel_total
-    normalized_throughput_node_0 = success_amount_node_0/arrived_amount_node_0      # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
-    normalized_throughput_node_1 = success_amount_node_1/arrived_amount_node_1      # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
-    normalized_throughput_channel_total = success_amount_channel_total/arrived_amount_channel_total     # should be divided by len(measurement_interval) in both numerator and denominator, but these terms cancel out
+    normalized_throughput_node_0 = success_amount_node_0/arrived_amount_node_0      # should be divided by duration of measurement_interval in both numerator and denominator, but these terms cancel out
+    normalized_throughput_node_1 = success_amount_node_1/arrived_amount_node_1      # should be divided by duration of measurement_interval in both numerator and denominator, but these terms cancel out
+    normalized_throughput_channel_total = success_amount_channel_total/arrived_amount_channel_total     # should be divided by duration of measurement_interval in both numerator and denominator, but these terms cancel out
     total_queueing_time_of_successful_transactions = sum((t.time_of_departure - t.time_of_arrival) for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status == "SUCCEEDED")))
     total_queueing_time_of_all_transactions = sum((t.time_of_departure - t.time_of_arrival) for t in all_transactions_list if ((t.time_of_arrival >= measurement_interval[0]) and (t.time_of_arrival < measurement_interval[1]) and (t.status != "PENDING")))
-    average_total_queueing_time_per_unit_amount = total_queueing_time_of_all_transactions/success_amount_channel_total
+    average_total_queueing_time_per_successful_unit_amount = total_queueing_time_of_all_transactions/success_amount_channel_total if success_amount_channel_total > 0 else inf
+    average_total_queueing_time_per_successful_transaction = total_queueing_time_of_all_transactions/success_count_channel_total if success_amount_channel_total > 0 else inf
 
     results = {
         'measurement_interval_length': measurement_interval[1] - measurement_interval[0],
@@ -493,7 +501,7 @@ def simulate_channel(node_0_parameters, node_1_parameters, scheduling_policy, bu
         'sacrificed_amounts': [sacrificed_amount_node_0, sacrificed_amount_node_1, sacrificed_amount_channel_total],
         'success_rates': [success_rate_node_0, success_rate_node_1, success_rate_channel_total],
         'normalized_throughputs': [normalized_throughput_node_0, normalized_throughput_node_1, normalized_throughput_channel_total],
-        'total_queueing_times': [total_queueing_time_of_successful_transactions, total_queueing_time_of_all_transactions, average_total_queueing_time_per_unit_amount]
+        'total_queueing_times': [total_queueing_time_of_successful_transactions, total_queueing_time_of_all_transactions, average_total_queueing_time_per_successful_unit_amount, average_total_queueing_time_per_successful_transaction]
     }
 
     print("Total success rate: {:.2f}".format(success_count_channel_total/arrived_count_channel_total))
