@@ -105,29 +105,29 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
         bar_width = 1 / (number_of_adjacent_bars + 1)
         for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
             # Success rate graph
-            # yerr_total = [100*(success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - success_rate_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index]), 100*(success_rate_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index])]
-            # ax1.bar(np.arange(number_of_xticks) - number_of_adjacent_bars * bar_width / 2 + scheduling_policy_index * bar_width, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], yerr=yerr_total, label=scheduling_policy, color=colors[scheduling_policy_index], width=bar_width)
+            yerr_total = [100*(success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - success_rate_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index]), 100*(success_rate_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index])]
+            ax1.bar(np.arange(number_of_xticks) - number_of_adjacent_bars * bar_width / 2 + scheduling_policy_index * bar_width, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], yerr=yerr_total, label=scheduling_policy, color=colors[scheduling_policy_index], width=bar_width)
 
             # Normalized throughput graph
-            yerr_total = [100*(normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - normalized_throughput_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index]), 100*(normalized_throughput_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index])]
-            ax1.bar(np.arange(number_of_xticks) - number_of_adjacent_bars * bar_width / 2 + scheduling_policy_index * bar_width, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], yerr=yerr_total, label=scheduling_policy, color=colors[scheduling_policy_index], width=bar_width)
+            # yerr_total = [100*(normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - normalized_throughput_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index]), 100*(normalized_throughput_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index] - normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index])]
+            # ax1.bar(np.arange(number_of_xticks) - number_of_adjacent_bars * bar_width / 2 + scheduling_policy_index * bar_width, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, :, max_buffering_time_index], yerr=yerr_total, label=scheduling_policy, color=colors[scheduling_policy_index], width=bar_width)
 
         ax1.grid(True)
         ax1.set_axisbelow(True)
         ax1.set_ylim(bottom=0, top=100)
         ax1.set_xlabel("Buffering capability")
-        # ax1.set_ylabel("Success rate (%)")
-        ax1.set_ylabel("Normalized throughput (%)")
+        ax1.set_ylabel("Success rate (%)")
+        # ax1.set_ylabel("Normalized throughput (%)")
 
         ax1.set_xticks(np.linspace(0 - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks + 1))
         ax1.set_xticklabels(par_buffering_capability_values, rotation=45)
 
         lines, labels = ax1.get_legend_handles_labels()
         legend = plt.legend(lines, labels, loc='best')
-        # fig.savefig(save_at_directory + filename + "_sr.png", bbox_inches='tight')
-        # fig.savefig(save_at_directory + filename + "_sr.pdf", bbox_inches='tight')
-        fig.savefig(save_at_directory + filename + "_nthr.png", bbox_inches='tight')
-        fig.savefig(save_at_directory + filename + "_nthr.pdf", bbox_inches='tight')
+        fig.savefig(save_at_directory + filename + "_sr.png", bbox_inches='tight')
+        fig.savefig(save_at_directory + filename + "_sr.pdf", bbox_inches='tight')
+        # fig.savefig(save_at_directory + filename + "_nthr.png", bbox_inches='tight')
+        # fig.savefig(save_at_directory + filename + "_nthr.pdf", bbox_inches='tight')
 
         legend_filename = filename + "_legend.png"
         save_legend(fig, lines, labels, legend, save_at_directory, legend_filename)

@@ -1,6 +1,8 @@
 # Plot success_rate/throughput/sacrificed vs max buffering time for all scheduling policies
 
 from math import ceil, floor
+
+from matplotlib.lines import Line2D
 from pypet import load_trajectory, pypetconstants, utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,6 +14,11 @@ from save_legend import save_legend
 save_at_directory = "./figures/"
 Path(save_at_directory).mkdir(parents=True, exist_ok=True)
 filename = 'results_101'
+# filename = 'results_102'
+# filename = 'results_103'
+# filename = 'results_104'
+# filename = 'results_105'
+# filename = 'results_106'
 
 traj = load_trajectory(filename='./HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_all=pypetconstants.LOAD_DATA)
 # traj = load_trajectory(filename='./HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_parameters=2, load_results=1)
@@ -71,16 +78,22 @@ normalized_throughput_channel_total_values = np.reshape(np.array(normalized_thro
 normalized_throughput_channel_total_values_average = normalized_throughput_channel_total_values.mean(axis=4)
 normalized_throughput_channel_total_values_max = normalized_throughput_channel_total_values.max(axis=4)
 normalized_throughput_channel_total_values_min = normalized_throughput_channel_total_values.min(axis=4)
-#
+
 # sacrificed_count_node_0_values = list(traj.f_get_from_runs('sacrificed_count_node_0', fast_access=True).values())
 # sacrificed_count_node_0_values = np.reshape(np.array(sacrificed_count_node_0_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_node_0_values_average = sacrificed_count_node_0_values.mean(axis=4)
+# sacrificed_count_node_0_values_max = sacrificed_count_node_0_values.max(axis=4)
+# sacrificed_count_node_0_values_min = sacrificed_count_node_0_values.min(axis=4)
 # sacrificed_count_node_1_values = list(traj.f_get_from_runs('sacrificed_count_node_1', fast_access=True).values())
 # sacrificed_count_node_1_values = np.reshape(np.array(sacrificed_count_node_1_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_node_1_values_average = sacrificed_count_node_1_values.mean(axis=4)
+# sacrificed_count_node_1_values_max = sacrificed_count_node_1_values.max(axis=4)
+# sacrificed_count_node_1_values_min = sacrificed_count_node_1_values.min(axis=4)
 # sacrificed_count_channel_total_values = list(traj.f_get_from_runs('sacrificed_count_channel_total', fast_access=True).values())
 # sacrificed_count_channel_total_values = np.reshape(np.array(sacrificed_count_channel_total_values), (len(par_scheduling_policy_values), len(par_buffer_discipline_values),  len(par_buffering_capability_values), len(par_max_buffering_time_values), len(par_seed_values)))
 # sacrificed_count_channel_total_values_average = sacrificed_count_channel_total_values.mean(axis=4)
+# sacrificed_count_channel_total_values_max = sacrificed_count_channel_total_values.max(axis=4)
+# sacrificed_count_channel_total_values_min = sacrificed_count_channel_total_values.min(axis=4)
 
 
 linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
@@ -102,6 +115,7 @@ for buffering_capability_index, buffering_capability in enumerate(par_buffering_
         for scheduling_policy_index, scheduling_policy in enumerate(par_scheduling_policy_values):
             innermost_index = scheduling_policy_index
             color = colors[innermost_index]
+            # # Success rates
             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 0, Scheduling policy: "+scheduling_policy, linestyle='solid')
             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate of node 1, Scheduling policy: "+scheduling_policy, linestyle='solid')
             # ax1.plot(par_max_buffering_time_values, 100 * success_rate_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Success rate total, Scheduling policy: "+scheduling_policy, linestyle=linestyles[0], color=color, alpha=1)
@@ -109,20 +123,26 @@ for buffering_capability_index, buffering_capability in enumerate(par_buffering_
             # ax2.plot(par_max_buffering_time_values, success_amount_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Throughput of node 1, Scheduling policy: "+scheduling_policy, linestyle='dashed')
             # ax2.plot(par_max_buffering_time_values, success_amount_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Total successful amount, Scheduling policy: "+scheduling_policy, linestyle=linestyles[1], color=color, alpha=1)
 
-            # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
-            # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
-            # yerr_0 = [100*(normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_0_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
-            # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_0, fmt='none')
-            # yerr_1 = [100*(normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_1_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
-            # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_1, fmt='none')
-
+            # Total throughput
             ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy, linestyle=linestyles[0], marker=markers[innermost_index], color=color, alpha=1)
             yerr_total = [100*(normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_channel_total_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_channel_total_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
             ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_channel_total_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_total, fmt='none')
 
-            # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node A", linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
-            # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy+" - Node B", linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
+            # # Per-node throughputs
+            # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy, linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
+            # yerr_0 = [100*(normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_0_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
+            # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_0, color=color, fmt='none')
+            # ax1.plot(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
+            # yerr_1 = [100*(normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]), 100*(normalized_throughput_node_1_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :])]
+            # ax1.errorbar(par_max_buffering_time_values, 100 * normalized_throughput_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_1, color=color, fmt='none')
 
+            # # Per-node sacrificed
+            # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label=scheduling_policy, linestyle=linestyles[1], marker=markers[innermost_index], color=color, alpha=1)
+            # yerr_0 = [sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - sacrificed_count_node_0_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], sacrificed_count_node_0_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]]
+            # ax1.errorbar(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_0, color=color, fmt='none')
+            # ax1.plot(par_max_buffering_time_values, sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], linestyle=linestyles[3], marker=markers[innermost_index], color=color, alpha=1)
+            # yerr_1 = [sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - sacrificed_count_node_1_values_min[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], sacrificed_count_node_1_values_max[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] - sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :]]
+            # ax1.errorbar(par_max_buffering_time_values, sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], yerr=yerr_1, color=color, fmt='none')
 
             # ax3.plot(par_max_buffering_time_values, sacrificed_count_node_0_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :] + sacrificed_count_node_1_values_average[scheduling_policy_index, buffer_discipline_index, buffering_capability_index, :], label="Number of sacrificed transactions, Scheduling policy: "+scheduling_policy, linestyle=linestyles[3], color=color, alpha=1)
 
@@ -139,6 +159,18 @@ for buffering_capability_index, buffering_capability in enumerate(par_buffering_
         # ax3.spines["right"].set_position(("axes", 1.2))
         # plt.title("Normalized throughput as a function of the maximum buffering time")
 
+        # # Per-node throughput/sacrificed legend
+        # lines_1, labels_1 = ax1.get_legend_handles_labels()
+        # for h in lines_1: h.set_linestyle("")
+        # lines_2 = [Line2D([0], [0], color='k', linewidth=1, linestyle=linestyles[1]),
+        #            Line2D([0], [0], color='k', linewidth=1, linestyle=linestyles[3])]
+        # labels_2 = ["Node A", "Node B"]
+        # lines = lines_1 + lines_2
+        # labels = labels_1 + labels_2
+        # legend = ax1.legend(lines, labels, loc='best')
+        # for h in lines_1: h.set_linestyle(linestyles[1])
+
+        # Total throughput legend
         lines_1, labels_1 = ax1.get_legend_handles_labels()
         # lines_2, labels_2 = ax2.get_legend_handles_labels()
         # lines_3, labels_3 = ax3.get_legend_handles_labels()
@@ -147,6 +179,7 @@ for buffering_capability_index, buffering_capability in enumerate(par_buffering_
         lines = lines_1
         labels = labels_1
         legend = ax1.legend(lines, labels, loc='best')
+
 
 
         fig.savefig(save_at_directory + filename + "_" + str(buffer_discipline_index+1) + ".png", bbox_inches='tight')
