@@ -120,7 +120,7 @@ for buffer_discipline_index, buffer_discipline in enumerate(par_buffer_disciplin
         ax1.set_ylabel("Success rate (%)")
         # ax1.set_ylabel("Normalized throughput (%)")
 
-        ax1.set_xticks(np.linspace(0 - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks + 1))
+        ax1.set_xticks(np.linspace(0 - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks - (number_of_adjacent_bars - 1) * bar_width / 4, number_of_xticks))
         ax1.set_xticklabels(par_buffering_capability_values, rotation=45)
 
         lines, labels = ax1.get_legend_handles_labels()
