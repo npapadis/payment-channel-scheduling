@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+
 def save_legend(fig, lines, labels, legend, legend_directory, legend_filename):
     # Code modified from https://gist.github.com/rldotai/012dbb3294bb2599ff82e61e82356990
 

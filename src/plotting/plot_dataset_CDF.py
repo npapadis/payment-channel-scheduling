@@ -7,12 +7,13 @@ from pathlib import Path
 
 plt.rcParams.update({'font.size': 15})
 
-save_at_directory = "./figures/"
+outputs_directory = str(Path("../../outputs").resolve())
+save_at_directory = outputs_directory + "/figures/"
 Path(save_at_directory).mkdir(parents=True, exist_ok=True)
 filename = 'dataset_cdf'
 capacity = 300
 
-EMPIRICAL_DATA_FILEPATH = "./creditcard-non-fraudulent-only-amounts-only.csv"
+EMPIRICAL_DATA_FILEPATH = "../../inputs/creditcard-non-fraudulent-only-amounts-only.csv"
 with open(EMPIRICAL_DATA_FILEPATH, newline='') as f:
     reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
     empirical_data = list(reader)

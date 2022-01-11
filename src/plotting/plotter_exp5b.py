@@ -8,15 +8,16 @@ from pathlib import Path
 
 from save_legend import save_legend
 
-save_at_directory = "./figures/"
+outputs_directory = str(Path("../../outputs").resolve())
+save_at_directory = outputs_directory + "/figures/"
 Path(save_at_directory).mkdir(parents=True, exist_ok=True)
 filename = 'results_111'
 # filename = 'results_112'
 # filename = 'results_113'
 # filename = 'results_114'
 
-traj = load_trajectory(filename='./HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_all=pypetconstants.LOAD_DATA)
-# traj = load_trajectory(filename='./HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_parameters=2, load_results=1)
+traj = load_trajectory(filename=outputs_directory + '/HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_all=pypetconstants.LOAD_DATA)
+# traj = load_trajectory(filename=outputs_directory + '/HDF5/' + filename + '.hdf5', name='single_payment_channel_scheduling', load_parameters=2, load_results=1)
 # traj.v_auto_load = True
 
 # Parse parameter values
