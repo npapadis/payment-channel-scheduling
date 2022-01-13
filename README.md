@@ -6,7 +6,7 @@ Transactions are generated from both sides according to customizable distributio
 
 The user can choose:
 * the initial channel balances
-* the transaction generation parameters: total transactions from each side, amount distribution (constant, uniform, gaussian, pareto, empirical from csv file), arrival time distribution (exponential with customizable parameter), deadline distribution (constant or uniform))
+* the transaction generation parameters: total transactions from each side, amount distribution (constant, uniform, gaussian, pareto, empirical from csv file), arrival time distribution (exponential with customizable parameter), deadline distribution (constant or uniform)
 * the scheduling policy (PMDE, PRI-IP, PRI-NIP, or PFI, see paper for detailed explanation)
 * the buffer discipline for the transaction buffers of the nodes: oldest_first, youngest_first, closest_deadline_first, largest_amount_first, smallest_amount_first
 * buffering_capability for each node: neither_node, only_node_0, only_node_1, both_separate, both_shared
