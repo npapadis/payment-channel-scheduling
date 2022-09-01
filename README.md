@@ -12,4 +12,7 @@ The user can choose:
 * buffering_capability for each node: neither_node, only_node_0, only_node_1, both_separate, both_shared
 * the number of experiments of which to calculate the average metrics
 
-This code accompanies the paper "Payment Channel Networks: Single-Hop Scheduling for Throughput Maximization" by N. Papadis and L. Tassiulas which will appear in the proceedings of the [IEEE International Conference on Computer Communications (INFOCOM) 2022](https://infocom2022.ieee-infocom.org).
+
+The code accompanies the following paper: 
+
+N. Papadis and L. Tassiulas, "Payment Channel Networks: Single-Hop Scheduling for Throughput Maximization," IEEE INFOCOM 2022 - IEEE Conference on Computer Communications, 2022, pp. 900-909, https://doi.org/10.1109/INFOCOM48880.2022.9796862.
